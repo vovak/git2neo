@@ -80,7 +80,7 @@ class CommitIndexTest {
 
     @Test
     fun testManyCommits() {
-        val height = 50000
+        val height = 10000
         val index = getIndex()
         val allCommits: MutableList<Commit> = ArrayList()
 
