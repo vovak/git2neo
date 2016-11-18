@@ -79,7 +79,7 @@ class CommitIndexTest {
 
     @Test
     fun testManyCommits() {
-        val height = 1000
+        val height = 5000
         val index = getIndex()
 
         var start = System.currentTimeMillis()
