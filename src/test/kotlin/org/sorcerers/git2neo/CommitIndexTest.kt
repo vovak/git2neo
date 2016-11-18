@@ -1,7 +1,12 @@
 package org.sorcerers.git2neo
 
 import org.junit.Assert
+import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Test
+import org.neo4j.graphdb.factory.GraphDatabaseFactory
+import org.neo4j.test.TestGraphDatabaseFactory
+import java.io.File
 import java.util.function.Predicate
 
 /**
@@ -9,8 +14,17 @@ import java.util.function.Predicate
 * @since 17/11/16
 */
 class CommitIndexTest {
+    lateinit var myIndex: CommitIndex
+
+    @Before
+    fun initIndex() {
+        val path = "./testdb"
+        val db = TestGraphDatabaseFactory().newImpermanentDatabase(File(path))
+        myIndex = CommitIndex(db)
+    }
+
     fun getIndex(): CommitIndex {
-        return CommitIndex()
+        return myIndex
     }
 
     fun createCommit(id: String, parents: List<String>): Commit {
@@ -26,6 +40,8 @@ class CommitIndexTest {
     @Test
     fun testAddCommit() {
         val index = getIndex()
+
+        Assert.assertNull(index.get(CommitId("0")))
         index.add(createCommit("0", null))
 
         val nonExistingCommit = index.get(CommitId("unknownIndex"))
@@ -33,6 +49,8 @@ class CommitIndexTest {
 
         val commitFromIndex = index.get(CommitId("0"))
         Assert.assertNotNull(commitFromIndex)
+
+        Assert.assertEquals(index.get(CommitId("0"))?.info?.id, createCommit("0", null).info.id)
     }
 
     @Test

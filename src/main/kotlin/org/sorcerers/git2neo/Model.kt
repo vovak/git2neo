@@ -1,18 +1,30 @@
 package org.sorcerers.git2neo
 
+import java.io.Serializable
 import java.util.function.Predicate
 
 /**
- * Created by vovak on 17/11/16.
- */
+* @author vovak
+* @since 17/11/16
+*/
 
-interface Id<T>;
+interface Id<T> : Serializable {
+    fun stringId(): String
+}
 
-data class CommitId(val id: String) : Id<Commit>
+data class CommitId(val idString: String) : Id<Commit> {
+    override fun stringId(): String {
+        return idString
+    }
+}
 
-data class FileRevisionId(val id: String) : Id<FileRevision>
+data class FileRevisionId(val id: String) : Id<FileRevision> {
+    override fun stringId(): String {
+        return id
+    }
+}
 
-data class Contributor(val email: String)
+data class Contributor(val email: String) : Serializable
 
 data class CommitInfo(
         val id:            CommitId,
@@ -21,7 +33,7 @@ data class CommitInfo(
         val authorTime:    Long,
         val committerTime: Long,
         val parents:       Collection<CommitId>
-)
+) : Serializable
 
 enum class Action {CREATED, MODIFIED, DELETED}
 
