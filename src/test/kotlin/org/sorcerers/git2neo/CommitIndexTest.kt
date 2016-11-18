@@ -5,6 +5,7 @@ import org.junit.Before
 import org.junit.Test
 import org.neo4j.test.TestGraphDatabaseFactory
 import java.io.File
+import java.util.*
 import java.util.function.Predicate
 
 /**
@@ -79,14 +80,16 @@ class CommitIndexTest {
 
     @Test
     fun testManyCommits() {
-        val height = 5000
+        val height = 50000
         val index = getIndex()
+        val allCommits: MutableList<Commit> = ArrayList()
 
-        var start = System.currentTimeMillis()
         for (i in 1..height) {
-            index.add(createCommit("left_$i", if (i == 1) emptyList() else listOf("left_${i - 1}", "right_${i - 1}")))
-            index.add(createCommit("right_$i", if (i == 1) null else "right_${i - 1}"))
+            allCommits.add(createCommit("left_$i", if (i == 1) emptyList() else listOf("left_${i - 1}", "right_${i - 1}")))
+            allCommits.add(createCommit("right_$i", if (i == 1) null else "right_${i - 1}"))
         }
+        var start = System.currentTimeMillis()
+        index.addAll(allCommits)
         var executionTime = System.currentTimeMillis() - start
         println("Inserted ${2 * height} revisions in ${1.0 * executionTime / 1000} seconds")
 

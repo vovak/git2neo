@@ -43,17 +43,23 @@ class CommitIndex(val db: GraphDatabaseService) : CommitStorage, HistoryQueriabl
         return result
     }
 
-    override fun add(commit: Commit) {
-        withDb {
-            val nodeId = commit.info.id
-            val node = findOrCreateCommitNode(nodeId)
-            node.setProperty("info", SerializationUtils.serialize(commit.info))
-            val parentIds = commit.info.parents
-            parentIds.forEach {
-                val parentNode = findOrCreateCommitNode(it)
-                node.createRelationshipTo(parentNode, PARENT)
-            }
+    fun doAdd(commit: Commit) {
+        val nodeId = commit.info.id
+        val node = findOrCreateCommitNode(nodeId)
+        node.setProperty("info", SerializationUtils.serialize(commit.info))
+        val parentIds = commit.info.parents
+        parentIds.forEach {
+            val parentNode = findOrCreateCommitNode(it)
+            node.createRelationshipTo(parentNode, PARENT)
         }
+    }
+
+    override fun add(commit: Commit) {
+        withDb { doAdd(commit)}
+    }
+
+    override fun addAll(commits: Collection<Commit>) {
+        withDb { commits.forEach { doAdd(it) } }
     }
 
     fun Node.toCommit(): Commit {

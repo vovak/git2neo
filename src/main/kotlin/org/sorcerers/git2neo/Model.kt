@@ -51,6 +51,7 @@ data class History<T>(val items: List<T>)
 
 interface CommitStorage {
     fun add(commit: Commit)
+    fun addAll(commits: Collection<Commit>)
     fun get(id: CommitId): Commit?
 }
 
