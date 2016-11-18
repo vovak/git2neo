@@ -79,14 +79,14 @@ class CommitIndexTest {
 
     @Test
     fun testManyCommits() {
-        val height = 10000
+        val height = 1000
         val index = getIndex()
 
         var start = System.currentTimeMillis()
         for (i in 1..height) {
             index.add(createCommit("left_$i", if (i == 1) emptyList() else listOf("left_${i - 1}", "right_${i - 1}")))
             index.add(createCommit("right_$i", if (i == 1) null else "right_${i - 1}"))
-            if (i % 1000 == 0) println(i)
+            if (i % 100 == 0) println(i)
         }
         var executionTime = System.currentTimeMillis() - start
         println("Inserted ${2 * height} revisions in ${1.0 * executionTime / 1000} seconds")
