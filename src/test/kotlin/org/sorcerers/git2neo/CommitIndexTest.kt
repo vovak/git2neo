@@ -2,17 +2,15 @@ package org.sorcerers.git2neo
 
 import org.junit.Assert
 import org.junit.Before
-import org.junit.BeforeClass
 import org.junit.Test
-import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.neo4j.test.TestGraphDatabaseFactory
 import java.io.File
 import java.util.function.Predicate
 
 /**
-* @author vovak
-* @since 17/11/16
-*/
+ * @author vovak
+ * @since 17/11/16
+ */
 class CommitIndexTest {
     lateinit var myIndex: CommitIndex
 
@@ -59,10 +57,10 @@ class CommitIndexTest {
         index.add(createCommit("0", null))
         index.add(createCommit("1", "0"))
 
-        val trivialHistory = index.getHistory(CommitId("0"), Predicate({true}))
+        val trivialHistory = index.getHistory(CommitId("0"), Predicate({ true }))
         Assert.assertEquals(1, trivialHistory.items.size)
 
-        val fullHistory = index.getHistory(CommitId("1"), Predicate({true}))
+        val fullHistory = index.getHistory(CommitId("1"), Predicate({ true }))
         Assert.assertEquals(2, fullHistory.items.size)
     }
 
@@ -77,5 +75,38 @@ class CommitIndexTest {
 
         val fullHistory = index.getHistory(CommitId("head"), Predicate { true })
         Assert.assertEquals(5, fullHistory.items.size)
+    }
+
+    @Test
+    fun testManyCommits() {
+        val height = 10000
+        val index = getIndex()
+
+        var start = System.currentTimeMillis()
+        for (i in 1..height) {
+            index.add(createCommit("left_$i", if (i == 1) emptyList() else listOf("left_${i - 1}", "right_${i - 1}")))
+            index.add(createCommit("right_$i", if (i == 1) null else "right_${i - 1}"))
+            if (i % 1000 == 0) println(i)
+        }
+        var executionTime = System.currentTimeMillis() - start
+        println("Inserted ${2 * height} revisions in ${1.0 * executionTime / 1000} seconds")
+
+
+        start = System.currentTimeMillis()
+
+        val leftHistory = index.getHistory(CommitId("left_$height"), Predicate { true })
+        executionTime = System.currentTimeMillis() - start
+        println("Acquired history of ${2 * height} revisions in ${1.0 * executionTime / 1000} seconds")
+
+        Assert.assertEquals(2 * height - 1, leftHistory.items.size)
+
+
+        start = System.currentTimeMillis()
+
+        val rightHistory = index.getHistory(CommitId("right_${height}"), Predicate { true })
+        executionTime = System.currentTimeMillis() - start
+        println("Acquired history of ${height} revisions in ${1.0 * executionTime / 1000} seconds")
+
+        Assert.assertEquals(height, rightHistory.items.size)
     }
 }
