@@ -7,5 +7,5 @@ import org.neo4j.graphdb.RelationshipType
  * @since 18/11/16
  */
 private enum class NodeRelation {
-    PARENT
+    PARENT, CONTAINS
 }

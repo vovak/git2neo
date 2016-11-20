@@ -40,7 +40,7 @@ enum class Action {CREATED, MODIFIED, DELETED}
 data class FileRevision(
         val id: FileRevisionId,
         val path: String,
-        val commitInfo: CommitInfo,
+        val commitId: CommitId,
         val action: Action,
         val relatedPath: String?
 )

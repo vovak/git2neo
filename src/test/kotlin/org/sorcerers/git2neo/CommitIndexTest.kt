@@ -36,6 +36,20 @@ class CommitIndexTest {
         return createCommit(id, parents)
     }
 
+    fun createCommit(id: String, parentIds: List<String>, changes: List<Triple<Action, String, String?>>): Commit {
+        val commitInfo = CommitInfo(CommitId(id), Contributor(""), Contributor(""), 0, 0, parentIds.map(::CommitId))
+        return Commit(commitInfo, changes.map { FileRevision(
+                FileRevisionId("${id}#${it.second}"),
+                it.second,
+                commitInfo.id,
+                it.first,
+                it.third) })
+    }
+
+    fun createCommit(id: String, parentId: String?, changes: List<Triple<Action, String, String?>>): Commit {
+        return createCommit(id, (if (parentId == null) emptyList<String>() else listOf(parentId)), changes)
+    }
+
     @Test
     fun testAddCommit() {
         val index = getIndex()
@@ -79,8 +93,17 @@ class CommitIndexTest {
     }
 
     @Test
+    fun testOneNodeWithChange() {
+        val index = getIndex()
+        index.add(createCommit("0", null, listOf(Triple(Action.CREATED, "a.txt", null))))
+        val commitFromDb = index.get(CommitId("0"))
+
+        Assert.assertEquals(1, commitFromDb!!.changes.size)
+    }
+
+    @Test
     fun testManyCommits() {
-        val height = 10000
+        val height = 1000
         val index = getIndex()
         val allCommits: MutableList<Commit> = ArrayList()
 
