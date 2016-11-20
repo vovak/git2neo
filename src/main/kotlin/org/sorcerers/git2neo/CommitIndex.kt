@@ -4,7 +4,6 @@ import org.apache.commons.lang3.SerializationUtils
 import org.neo4j.graphdb.*
 import org.neo4j.graphdb.traversal.Uniqueness
 import java.util.*
-import java.util.function.Predicate
 
 
 /**
@@ -110,7 +109,7 @@ class CommitIndex(val db: GraphDatabaseService) : CommitStorage, HistoryQueriabl
         return result
     }
 
-    override fun getHistory(head: Id<Commit>, filter: Predicate<Commit>): History<Commit> {
+    override fun getHistory(head: Id<Commit>, filter: (Commit) -> Boolean): History<Commit> {
         val commits: MutableList<Commit> = ArrayList()
         withDb {
             val headNode = db.findNode(COMMIT, "id", head.stringId())

@@ -6,7 +6,6 @@ import org.junit.Test
 import org.neo4j.test.TestGraphDatabaseFactory
 import java.io.File
 import java.util.*
-import java.util.function.Predicate
 
 /**
  * @author vovak
@@ -38,12 +37,14 @@ class CommitIndexTest {
 
     fun createCommit(id: String, parentIds: List<String>, changes: List<Triple<Action, String, String?>>): Commit {
         val commitInfo = CommitInfo(CommitId(id), Contributor(""), Contributor(""), 0, 0, parentIds.map(::CommitId))
-        return Commit(commitInfo, changes.map { FileRevision(
-                FileRevisionId("${id}#${it.second}"),
-                it.second,
-                commitInfo.id,
-                it.first,
-                it.third) })
+        return Commit(commitInfo, changes.map {
+            FileRevision(
+                    FileRevisionId("${id}#${it.second}"),
+                    it.second,
+                    commitInfo.id,
+                    it.first,
+                    it.third)
+        })
     }
 
     fun createCommit(id: String, parentId: String?, changes: List<Triple<Action, String, String?>>): Commit {
@@ -72,10 +73,10 @@ class CommitIndexTest {
         index.add(createCommit("0", null))
         index.add(createCommit("1", "0"))
 
-        val trivialHistory = index.getHistory(CommitId("0"), Predicate({ true }))
+        val trivialHistory = index.getHistory(CommitId("0"), { true })
         Assert.assertEquals(1, trivialHistory.items.size)
 
-        val fullHistory = index.getHistory(CommitId("1"), Predicate({ true }))
+        val fullHistory = index.getHistory(CommitId("1"), { true })
         Assert.assertEquals(2, fullHistory.items.size)
     }
 
@@ -88,7 +89,7 @@ class CommitIndexTest {
         index.add(createCommit("merge", listOf("left", "right")))
         index.add(createCommit("head", "merge"))
 
-        val fullHistory = index.getHistory(CommitId("head"), Predicate { true })
+        val fullHistory = index.getHistory(CommitId("head"), { true })
         Assert.assertEquals(5, fullHistory.items.size)
     }
 
@@ -119,7 +120,7 @@ class CommitIndexTest {
 
         start = System.currentTimeMillis()
 
-        val leftHistory = index.getHistory(CommitId("left_$height"), Predicate { true })
+        val leftHistory = index.getHistory(CommitId("left_$height"), { true })
         executionTime = System.currentTimeMillis() - start
         println("Acquired history of ${2 * height} revisions in ${1.0 * executionTime / 1000} seconds")
 
@@ -128,7 +129,7 @@ class CommitIndexTest {
 
         start = System.currentTimeMillis()
 
-        val rightHistory = index.getHistory(CommitId("right_${height}"), Predicate { true })
+        val rightHistory = index.getHistory(CommitId("right_${height}"), { true })
         executionTime = System.currentTimeMillis() - start
         println("Acquired history of ${height} revisions in ${1.0 * executionTime / 1000} seconds")
 

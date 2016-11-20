@@ -1,7 +1,6 @@
 package org.sorcerers.git2neo
 
 import java.io.Serializable
-import java.util.function.Predicate
 
 /**
 * @author vovak
@@ -56,5 +55,5 @@ interface CommitStorage {
 }
 
 interface HistoryQueriable<T> {
-    fun getHistory(head: Id<T>, filter: Predicate<T>): History<T>
+    fun getHistory(head: Id<T>, filter: (T) -> Boolean): History<T>
 }
