@@ -225,7 +225,7 @@ class CommitIndexTest {
         val changesHistoryBeforeHead = index.getChangesHistory(beforeHeadCommitChange.id, {true})
         Assert.assertEquals(5, changesHistoryBeforeHead.items.size)
 
-        val head = index.get(CommitId("4"))
+        val head = index.get(CommitId("5"))
         Assert.assertNotNull(head)
         val headCommitChange = head!!.changes.first()
 
