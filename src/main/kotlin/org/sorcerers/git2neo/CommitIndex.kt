@@ -2,6 +2,9 @@ package org.sorcerers.git2neo
 
 import org.apache.commons.lang3.SerializationUtils
 import org.neo4j.graphdb.*
+import org.neo4j.graphdb.traversal.Evaluation
+import org.neo4j.graphdb.traversal.Evaluator
+import org.neo4j.graphdb.traversal.Evaluators
 import org.neo4j.graphdb.traversal.Uniqueness
 import java.util.*
 
@@ -57,6 +60,54 @@ class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
         commitNode.createRelationshipTo(changeNode, CONTAINS)
     }
 
+    fun Node.getChanges(): List<Node> {
+        assert(this.hasLabel(COMMIT))
+        return this.relationships.filter { it.isType(CONTAINS) }.map { it.endNode }
+    }
+
+    fun Node.getCommit(): Node {
+        assert(this.hasLabel(CHANGE))
+        val startNodes = this.relationships.filter { it.isType(CONTAINS) }.map { it.startNode }
+        assert(startNodes.size == 1)
+        return startNodes.first()
+    }
+
+    fun updateChangeParentConnections(changeNode: Node) {
+        val commitNode = changeNode.getCommit()
+
+        //find next parents, if any
+        val parentPath = changeNode.getProperty("path") as String
+        val parentNodesWithPath = db.traversalDescription()
+                .depthFirst()
+                .relationships(PARENT, Direction.OUTGOING)
+                .evaluator(Evaluators.excludeStartPosition())
+                .traverse(commitNode).nodes()
+                .filter { it.getChanges().map { it.getProperty("path") }.contains(parentPath) }
+        assert(commitNode !in parentNodesWithPath)
+        val parentChangeNodes: MutableList<Node> = ArrayList()
+        parentNodesWithPath.forEach {
+            val changesWithPath = it.getChanges().filter { it.getProperty("path") as String == parentPath }
+            assert(changesWithPath.size == 1)
+            val targetChangeNode = changesWithPath.first()
+            parentChangeNodes.add(targetChangeNode)
+        }
+        parentChangeNodes.forEach {
+            println("Creating change parent relationship from ${changeNode.id} to ${it.id}")
+            changeNode.createRelationshipTo(it, PARENT)}
+
+
+        //find next children, if any
+    }
+
+    fun updateChangesForNewRevision(commitNode: Node) {
+        assert(commitNode.hasLabel(COMMIT))
+        val changeNodes = commitNode.getChanges()
+        changeNodes.forEach {
+            println("Updating parent connection for ${it.getProperty("path")}")
+            updateChangeParentConnections(it)
+        }
+    }
+
     fun doAdd(commit: Commit) {
         val nodeId = commit.info.id
         val node = findOrCreateCommitNode(nodeId)
@@ -68,6 +119,8 @@ class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
             val parentNode = findOrCreateCommitNode(it)
             node.createRelationshipTo(parentNode, PARENT)
         }
+
+        updateChangesForNewRevision(node)
     }
 
     override fun add(commit: Commit) {
@@ -121,6 +174,13 @@ class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
     }
 
     fun getChangesHistory(head: Id<FileRevision>, filter: (FileRevision) -> Boolean): History<FileRevision> {
-        return History(emptyList())
+        val changes: MutableList<FileRevision> = ArrayList()
+        withDb {
+            val headNode = db.findNode(CHANGE, "id", head.stringId())
+            val traversal = db.traversalDescription().depthFirst().relationships(PARENT, Direction.OUTGOING).uniqueness(Uniqueness.NODE_GLOBAL)
+            val result = traversal.traverse(headNode)
+            result.nodes().forEach { changes.add(it.toFileRevision()) }
+        }
+        return History(changes)
     }
 }

@@ -116,6 +116,60 @@ class CommitIndexTest {
     }
 
     @Test
+    fun testTrivialChangesHistoryWithBulkAdd() {
+        val index = getIndex()
+        val commits = listOf(
+                createCommit("0", null, listOf(Triple(Action.CREATED, "a.txt", null))),
+                createCommit("1", "0", listOf(Triple(Action.MODIFIED, "a.txt", null)))
+        )
+        index.addAll(commits)
+        val headCommit = index.get(CommitId("1"))
+        Assert.assertNotNull(headCommit)
+        val headCommitChange = headCommit!!.changes.first()
+
+        val changesHistory = index.getChangesHistory(headCommitChange.id, {true})
+        Assert.assertEquals(2, changesHistory.items.size)
+    }
+
+    @Test
+    fun testLongerLinearChangesHistoryWithOneFile() {
+        val index = getIndex()
+        index.add(createCommit("0", null, listOf(Triple(Action.CREATED, "a.txt", null))))
+        index.add(createCommit("1", "0", listOf(Triple(Action.MODIFIED, "a.txt", null))))
+        index.add(createCommit("2", "1", listOf(Triple(Action.MODIFIED, "a.txt", null))))
+        index.add(createCommit("3", "2", listOf(Triple(Action.MODIFIED, "a.txt", null))))
+        index.add(createCommit("4", "3", listOf(Triple(Action.MODIFIED, "a.txt", null))))
+        index.add(createCommit("5", "4", listOf(Triple(Action.MODIFIED, "a.txt", null))))
+        val headCommit = index.get(CommitId("5"))
+        Assert.assertNotNull(headCommit)
+        val headCommitChange = headCommit!!.changes.first()
+
+        val changesHistory = index.getChangesHistory(headCommitChange.id, {true})
+        Assert.assertEquals(6, changesHistory.items.size)
+    }
+
+    @Test
+    fun testLongerLinearChangesHistoryWithTwoFiles() {
+        val index = getIndex()
+        index.add(createCommit("0", null, listOf(Triple(Action.CREATED, "a.txt", null))))
+        index.add(createCommit("1", "0", listOf(Triple(Action.MODIFIED, "a.txt", null), Triple(Action.CREATED, "b.txt", null))))
+        index.add(createCommit("2", "1", listOf(Triple(Action.MODIFIED, "a.txt", null), Triple(Action.MODIFIED, "b.txt", null))))
+        index.add(createCommit("3", "2", listOf(Triple(Action.MODIFIED, "a.txt", null))))
+        index.add(createCommit("4", "3", listOf(Triple(Action.MODIFIED, "b.txt", null))))
+        index.add(createCommit("5", "4", listOf(Triple(Action.MODIFIED, "a.txt", null))))
+        val headCommit = index.get(CommitId("5"))
+        Assert.assertNotNull(headCommit)
+        val headCommitChange = headCommit!!.changes.first()
+
+        val changesHistory = index.getChangesHistory(headCommitChange.id, {true})
+        Assert.assertEquals(5, changesHistory.items.size)
+
+        val headForB = index.get(CommitId("4"))!!.changes.first()
+        val changesForBHistory = index.getChangesHistory(headForB.id, {true})
+        Assert.assertEquals(3, changesForBHistory.items.size)
+    }
+
+    @Test
     fun testManyCommits() {
         val height = 1000
         val index = getIndex()
