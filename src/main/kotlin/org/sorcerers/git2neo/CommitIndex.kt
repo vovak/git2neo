@@ -10,7 +10,7 @@ import java.util.*
  * @author vovak
  * @since 17/11/16
  */
-class CommitIndex(val db: GraphDatabaseService) : CommitStorage, HistoryQueriable<Commit> {
+class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
     val COMMIT: Label = Label { "commit" }
     val CHANGE: Label = Label { "change" }
     val PARENT: RelationshipType = RelationshipType { "PARENT" }
@@ -109,7 +109,7 @@ class CommitIndex(val db: GraphDatabaseService) : CommitStorage, HistoryQueriabl
         return result
     }
 
-    override fun getHistory(head: Id<Commit>, filter: (Commit) -> Boolean): History<Commit> {
+    fun getCommitHistory(head: Id<Commit>, filter: (Commit) -> Boolean): History<Commit> {
         val commits: MutableList<Commit> = ArrayList()
         withDb {
             val headNode = db.findNode(COMMIT, "id", head.stringId())
@@ -118,5 +118,9 @@ class CommitIndex(val db: GraphDatabaseService) : CommitStorage, HistoryQueriabl
             result.nodes().forEach { commits.add(it.toCommit()) }
         }
         return History(commits)
+    }
+
+    fun getChangesHistory(head: Id<FileRevision>, filter: (FileRevision) -> Boolean): History<FileRevision> {
+        return History(emptyList())
     }
 }

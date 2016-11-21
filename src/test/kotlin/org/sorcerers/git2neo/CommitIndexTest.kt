@@ -73,10 +73,10 @@ class CommitIndexTest {
         index.add(createCommit("0", null))
         index.add(createCommit("1", "0"))
 
-        val trivialHistory = index.getHistory(CommitId("0"), { true })
+        val trivialHistory = index.getCommitHistory(CommitId("0"), { true })
         Assert.assertEquals(1, trivialHistory.items.size)
 
-        val fullHistory = index.getHistory(CommitId("1"), { true })
+        val fullHistory = index.getCommitHistory(CommitId("1"), { true })
         Assert.assertEquals(2, fullHistory.items.size)
     }
 
@@ -89,7 +89,7 @@ class CommitIndexTest {
         index.add(createCommit("merge", listOf("left", "right")))
         index.add(createCommit("head", "merge"))
 
-        val fullHistory = index.getHistory(CommitId("head"), { true })
+        val fullHistory = index.getCommitHistory(CommitId("head"), { true })
         Assert.assertEquals(5, fullHistory.items.size)
     }
 
@@ -100,6 +100,19 @@ class CommitIndexTest {
         val commitFromDb = index.get(CommitId("0"))
 
         Assert.assertEquals(1, commitFromDb!!.changes.size)
+    }
+
+    @Test
+    fun testTrivialChangesHistory() {
+        val index = getIndex()
+        index.add(createCommit("0", null, listOf(Triple(Action.CREATED, "a.txt", null))))
+        index.add(createCommit("1", "0", listOf(Triple(Action.MODIFIED, "a.txt", null))))
+        val headCommit = index.get(CommitId("1"))
+        Assert.assertNotNull(headCommit)
+        val headCommitChange = headCommit!!.changes.first()
+
+        val changesHistory = index.getChangesHistory(headCommitChange.id, {true})
+        Assert.assertEquals(2, changesHistory.items.size)
     }
 
     @Test
@@ -120,7 +133,7 @@ class CommitIndexTest {
 
         start = System.currentTimeMillis()
 
-        val leftHistory = index.getHistory(CommitId("left_$height"), { true })
+        val leftHistory = index.getCommitHistory(CommitId("left_$height"), { true })
         executionTime = System.currentTimeMillis() - start
         println("Acquired history of ${2 * height} revisions in ${1.0 * executionTime / 1000} seconds")
 
@@ -129,7 +142,7 @@ class CommitIndexTest {
 
         start = System.currentTimeMillis()
 
-        val rightHistory = index.getHistory(CommitId("right_${height}"), { true })
+        val rightHistory = index.getCommitHistory(CommitId("right_${height}"), { true })
         executionTime = System.currentTimeMillis() - start
         println("Acquired history of ${height} revisions in ${1.0 * executionTime / 1000} seconds")
 

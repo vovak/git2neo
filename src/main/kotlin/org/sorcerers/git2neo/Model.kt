@@ -53,7 +53,3 @@ interface CommitStorage {
     fun addAll(commits: Collection<Commit>)
     fun get(id: CommitId): Commit?
 }
-
-interface HistoryQueriable<T> {
-    fun getHistory(head: Id<T>, filter: (T) -> Boolean): History<T>
-}
