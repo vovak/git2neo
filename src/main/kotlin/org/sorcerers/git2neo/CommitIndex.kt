@@ -92,7 +92,6 @@ class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
             parentChangeNodes.add(targetChangeNode)
         }
         parentChangeNodes.forEach {
-            println("Creating change parent relationship from ${changeNode.id} to ${it.id}")
             changeNode.createRelationshipTo(it, PARENT)}
 
 
@@ -103,7 +102,6 @@ class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
         assert(commitNode.hasLabel(COMMIT))
         val changeNodes = commitNode.getChanges()
         changeNodes.forEach {
-            println("Updating parent connection for ${it.getProperty("path")}")
             updateChangeParentConnections(it)
         }
     }
