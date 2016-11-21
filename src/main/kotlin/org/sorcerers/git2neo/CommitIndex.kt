@@ -105,7 +105,6 @@ class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
             parentChangeNodes.add(targetChangeNode)
         }
         parentChangeNodes.forEach {
-            println("Creating connection from change node $changeNode to $it")
             changeNode.createRelationshipTo(it, PARENT)
         }
 
@@ -125,13 +124,12 @@ class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
 
         val childChangeNodes: MutableList<Node> = ArrayList()
         childNodesWithPath.forEach {
-            val changesWithPath = it.getChanges().filter { it.getProperty("path") as String == childPath }
+            val changesWithPath = it.getChanges().filter { it.getProperty("path") == childPath || it.getProperty("oldPath") == childPath }
             assert(changesWithPath.size == 1)
             val targetChangeNode = changesWithPath.first()
             childChangeNodes.add(targetChangeNode)
         }
         childChangeNodes.forEach {
-            println("Creating connection from change node $it to $changeNode")
             it.createRelationshipTo(changeNode, PARENT)
         }
     }
