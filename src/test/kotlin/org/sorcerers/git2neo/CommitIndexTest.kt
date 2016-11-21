@@ -116,6 +116,19 @@ class CommitIndexTest {
     }
 
     @Test
+    fun testTrivialChangesHistoryWithReverseInsertionOrder() {
+        val index = getIndex()
+        index.add(createCommit("1", "0", listOf(Triple(Action.MODIFIED, "a.txt", null))))
+        index.add(createCommit("0", null, listOf(Triple(Action.CREATED, "a.txt", null))))
+        val headCommit = index.get(CommitId("1"))
+        Assert.assertNotNull(headCommit)
+        val headCommitChange = headCommit!!.changes.first()
+
+        val changesHistory = index.getChangesHistory(headCommitChange.id, {true})
+        Assert.assertEquals(2, changesHistory.items.size)
+    }
+
+    @Test
     fun testTrivialChangesHistoryWithBulkAdd() {
         val index = getIndex()
         val commits = listOf(
