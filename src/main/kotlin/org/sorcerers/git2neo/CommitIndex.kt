@@ -77,6 +77,7 @@ class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
 
         //find next parents, if any
         val parentPath = changeNode.getProperty("path") as String
+        val childPath = parentPath
 
         val parentNodesWithPath = db.traversalDescription()
                 .uniqueness(Uniqueness.NODE_GLOBAL)
@@ -105,6 +106,29 @@ class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
 
 
         //find next children, if any
+        val childNodesWithPath = db.traversalDescription()
+                .uniqueness(Uniqueness.NODE_GLOBAL)
+                .relationships(PARENT, Direction.INCOMING)
+                .evaluator(Evaluators.excludeStartPosition())
+                .evaluator {
+                    val currentNode = it.endNode()
+                    if (currentNode == commitNode) return@evaluator Evaluation.INCLUDE_AND_CONTINUE
+                    if (currentNode.getChanges().map{it.getProperty("path")}.contains(childPath)) return@evaluator Evaluation.INCLUDE_AND_PRUNE
+                    return@evaluator Evaluation.EXCLUDE_AND_CONTINUE
+                }
+                .traverse(commitNode).nodes()
+
+        val childChangeNodes: MutableList<Node> = ArrayList()
+        childNodesWithPath.forEach {
+            val changesWithPath = it.getChanges().filter { it.getProperty("path") as String == childPath }
+            assert(changesWithPath.size == 1)
+            val targetChangeNode = changesWithPath.first()
+            childChangeNodes.add(targetChangeNode)
+        }
+        childChangeNodes.forEach {
+            println("Creating connection from change node $it to $changeNode")
+            it.createRelationshipTo(changeNode, PARENT)
+        }
     }
 
     fun updateChangesForNewRevision(commitNode: Node) {
