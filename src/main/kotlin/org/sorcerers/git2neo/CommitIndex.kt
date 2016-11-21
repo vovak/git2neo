@@ -1,7 +1,6 @@
 package org.sorcerers.git2neo
 
 import org.apache.commons.lang3.SerializationUtils
-import org.neo4j.graphalgo.GraphAlgoFactory
 import org.neo4j.graphdb.*
 import org.neo4j.graphdb.traversal.Evaluation
 import org.neo4j.graphdb.traversal.Evaluators
@@ -53,8 +52,8 @@ class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
         changeNode.setProperty("id", change.id.stringId())
         changeNode.setProperty("action", change.action.name)
         changeNode.setProperty("path", change.path)
-        if (change.relatedPath != null) {
-            changeNode.setProperty("relatedPath", change.relatedPath)
+        if (change.oldPath != null) {
+            changeNode.setProperty("oldPath", change.oldPath)
         }
         changeNode.setProperty("commitId", change.commitId.stringId())
         commitNode.createRelationshipTo(changeNode, CONTAINS)
@@ -72,12 +71,18 @@ class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
         return startNodes.first()
     }
 
+    fun Node.getAction(): Action {
+        assert(this.hasLabel(CHANGE))
+        return Action.valueOf(getProperty("action") as String)
+    }
+
     fun updateChangeParentConnections(changeNode: Node) {
         val commitNode = changeNode.getCommit()
 
         //find next parents, if any
-        val parentPath = changeNode.getProperty("path") as String
-        val childPath = parentPath
+        val action = changeNode.getAction()
+        val parentPath = if (action == Action.MOVED) changeNode.getProperty("oldPath") as String else changeNode.getProperty("path") as String
+        val childPath = changeNode.getProperty("path") as String
 
         val parentNodesWithPath = db.traversalDescription()
                 .uniqueness(Uniqueness.NODE_GLOBAL)
@@ -113,7 +118,7 @@ class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
                 .evaluator {
                     val currentNode = it.endNode()
                     if (currentNode == commitNode) return@evaluator Evaluation.INCLUDE_AND_CONTINUE
-                    if (currentNode.getChanges().map{it.getProperty("path")}.contains(childPath)) return@evaluator Evaluation.INCLUDE_AND_PRUNE
+                    if (currentNode.getChanges().map{it.getProperty("path")}.contains(childPath) || currentNode.getChanges().map{it.getProperty("oldPath")}.contains(childPath)) return@evaluator Evaluation.INCLUDE_AND_PRUNE
                     return@evaluator Evaluation.EXCLUDE_AND_CONTINUE
                 }
                 .traverse(commitNode).nodes()
@@ -164,13 +169,13 @@ class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
 
     fun Node.toFileRevision(): FileRevision {
         assert(this.hasLabel(CHANGE))
-        val hasRelatedPath = this.hasProperty("relatedPath")
+        val hasOldPath = this.hasProperty("oldPath")
         return FileRevision(
                 FileRevisionId(this.getProperty("id") as String),
                 this.getProperty("path") as String,
+                if (hasOldPath) this.getProperty("oldPath") as String else null,
                 CommitId(this.getProperty("commitId") as String),
-                Action.valueOf(this.getProperty("action") as String),
-                if (hasRelatedPath) this.getProperty("relatedPath") as String else null
+                Action.valueOf(this.getProperty("action") as String)
         )
     }
 

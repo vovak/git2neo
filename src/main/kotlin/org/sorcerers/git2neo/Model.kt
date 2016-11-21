@@ -34,14 +34,14 @@ data class CommitInfo(
         val parents:       Collection<CommitId>
 ) : Serializable
 
-enum class Action {CREATED, MODIFIED, DELETED}
+enum class Action {CREATED, MODIFIED, DELETED, MOVED}
 
 data class FileRevision(
         val id: FileRevisionId,
         val path: String,
+        val oldPath: String?,
         val commitId: CommitId,
-        val action: Action,
-        val relatedPath: String?
+        val action: Action
 )
 
 data class Commit(val info: CommitInfo, val changes: Collection<FileRevision>)

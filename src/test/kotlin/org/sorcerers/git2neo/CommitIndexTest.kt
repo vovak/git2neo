@@ -41,9 +41,9 @@ class CommitIndexTest {
             FileRevision(
                     FileRevisionId("${id}#${it.second}"),
                     it.second,
+                    it.third,
                     commitInfo.id,
-                    it.first,
-                    it.third)
+                    it.first)
         })
     }
 
@@ -181,6 +181,32 @@ class CommitIndexTest {
         val changesForBHistory = index.getChangesHistory(headForB.id, {true})
         Assert.assertEquals(3, changesForBHistory.items.size)
     }
+
+    @Test
+    fun testWithRenames() {
+        val index = getIndex()
+        index.add(createCommit("0", null, listOf(Triple(Action.CREATED, "a.txt", null))))
+        index.add(createCommit("1", "0", listOf(Triple(Action.MOVED, "a1.txt", "a.txt"))))
+        index.add(createCommit("2", "1", listOf(Triple(Action.MODIFIED, "a1.txt", null))))
+        index.add(createCommit("3", "2", listOf(Triple(Action.MODIFIED, "a1.txt", null))))
+        index.add(createCommit("4", "3", listOf(Triple(Action.MOVED, "a2.txt", "a1.txt"))))
+        index.add(createCommit("5", "4", listOf(Triple(Action.MODIFIED, "a2.txt", null))))
+
+        val beforeHead = index.get(CommitId("4"))
+        Assert.assertNotNull(beforeHead)
+        val beforeHeadCommitChange = beforeHead!!.changes.first()
+
+        val changesHistoryBeforeHead = index.getChangesHistory(beforeHeadCommitChange.id, {true})
+        Assert.assertEquals(5, changesHistoryBeforeHead.items.size)
+
+        val head = index.get(CommitId("4"))
+        Assert.assertNotNull(head)
+        val headCommitChange = head!!.changes.first()
+
+        val changesHistoryHead = index.getChangesHistory(headCommitChange.id, {true})
+        Assert.assertEquals(6, changesHistoryHead.items.size)
+    }
+
 
     @Test
     fun testManyCommits() {
