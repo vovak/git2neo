@@ -1,9 +1,9 @@
 package org.sorcerers.git2neo
 
 import org.apache.commons.lang3.SerializationUtils
+import org.neo4j.graphalgo.GraphAlgoFactory
 import org.neo4j.graphdb.*
 import org.neo4j.graphdb.traversal.Evaluation
-import org.neo4j.graphdb.traversal.Evaluator
 import org.neo4j.graphdb.traversal.Evaluators
 import org.neo4j.graphdb.traversal.Uniqueness
 import java.util.*
@@ -77,12 +77,19 @@ class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
 
         //find next parents, if any
         val parentPath = changeNode.getProperty("path") as String
+
         val parentNodesWithPath = db.traversalDescription()
-                .depthFirst()
+                .uniqueness(Uniqueness.NODE_GLOBAL)
                 .relationships(PARENT, Direction.OUTGOING)
                 .evaluator(Evaluators.excludeStartPosition())
+                .evaluator {
+                    val currentNode = it.endNode()
+                    if (currentNode == commitNode) return@evaluator Evaluation.INCLUDE_AND_CONTINUE
+                    if (currentNode.getChanges().map{it.getProperty("path")}.contains(parentPath)) return@evaluator Evaluation.INCLUDE_AND_PRUNE
+                    return@evaluator Evaluation.EXCLUDE_AND_CONTINUE
+                }
                 .traverse(commitNode).nodes()
-                .filter { it.getChanges().map { it.getProperty("path") }.contains(parentPath) }
+
         assert(commitNode !in parentNodesWithPath)
         val parentChangeNodes: MutableList<Node> = ArrayList()
         parentNodesWithPath.forEach {
@@ -92,7 +99,9 @@ class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
             parentChangeNodes.add(targetChangeNode)
         }
         parentChangeNodes.forEach {
-            changeNode.createRelationshipTo(it, PARENT)}
+            println("Creating connection from change node $changeNode to $it")
+            changeNode.createRelationshipTo(it, PARENT)
+        }
 
 
         //find next children, if any
