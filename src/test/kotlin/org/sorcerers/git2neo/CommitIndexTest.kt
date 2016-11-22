@@ -8,8 +8,6 @@ import org.junit.Test
  * @since 17/11/16
  */
 class CommitIndexTest : CommitIndexTestBase() {
-
-
     @Test
     fun testAddCommit() {
         val index = getIndex()
