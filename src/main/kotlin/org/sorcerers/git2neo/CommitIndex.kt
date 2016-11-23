@@ -165,7 +165,7 @@ class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
             node.createRelationshipTo(parentNode, PARENT)
         }
 
-        updateChangesForNewRevision(node)
+//        updateChangesForNewRevision(node)
     }
 
     override fun add(commit: Commit) {
