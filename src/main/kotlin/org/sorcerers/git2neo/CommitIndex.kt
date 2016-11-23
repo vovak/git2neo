@@ -165,7 +165,9 @@ class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
             node.createRelationshipTo(parentNode, PARENT)
         }
 
-//        updateChangesForNewRevision(node)
+        //TODO Current impl is quite slow (up to 200 ms/node)
+        //TODO update changes connection with one traversal, try adding index on path/oldPath for change nodes.
+        updateChangesForNewRevision(node)
     }
 
     override fun add(commit: Commit) {
