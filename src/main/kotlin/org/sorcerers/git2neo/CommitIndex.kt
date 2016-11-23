@@ -76,12 +76,23 @@ class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
         return Action.valueOf(getProperty("action") as String)
     }
 
+    fun Node.getOldPath(): String? {
+        assert(this.hasLabel(CHANGE))
+        if (!this.hasProperty("oldPath")) return null
+        return this.getProperty("oldPath") as String
+    }
+
+    fun Node.getPath(): String {
+        assert(this.hasLabel(CHANGE))
+        return this.getProperty("path") as String
+    }
+
     fun updateChangeParentConnections(changeNode: Node) {
         val commitNode = changeNode.getCommit()
 
         //find next parents, if any
         val action = changeNode.getAction()
-        val parentPath = if (action == Action.MOVED) changeNode.getProperty("oldPath") as String else changeNode.getProperty("path") as String
+        val parentPath = if (action == Action.MOVED) changeNode.getOldPath() else changeNode.getPath()
         val childPath = changeNode.getProperty("path") as String
 
         val parentNodesWithPath = db.traversalDescription()
@@ -91,7 +102,7 @@ class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
                 .evaluator {
                     val currentNode = it.endNode()
                     if (currentNode == commitNode) return@evaluator Evaluation.INCLUDE_AND_CONTINUE
-                    if (currentNode.getChanges().map{it.getProperty("path")}.contains(parentPath)) return@evaluator Evaluation.INCLUDE_AND_PRUNE
+                    if (currentNode.getChanges().map{it.getPath()}.contains(parentPath)) return@evaluator Evaluation.INCLUDE_AND_PRUNE
                     return@evaluator Evaluation.EXCLUDE_AND_CONTINUE
                 }
                 .traverse(commitNode).nodes()
@@ -99,7 +110,7 @@ class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
         assert(commitNode !in parentNodesWithPath)
         val parentChangeNodes: MutableList<Node> = ArrayList()
         parentNodesWithPath.forEach {
-            val changesWithPath = it.getChanges().filter { it.getProperty("path") as String == parentPath }
+            val changesWithPath = it.getChanges().filter { it.getPath() == parentPath }
             assert(changesWithPath.size == 1)
             val targetChangeNode = changesWithPath.first()
             parentChangeNodes.add(targetChangeNode)
@@ -117,14 +128,14 @@ class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
                 .evaluator {
                     val currentNode = it.endNode()
                     if (currentNode == commitNode) return@evaluator Evaluation.INCLUDE_AND_CONTINUE
-                    if (currentNode.getChanges().map{it.getProperty("path")}.contains(childPath) || currentNode.getChanges().map{it.getProperty("oldPath")}.contains(childPath)) return@evaluator Evaluation.INCLUDE_AND_PRUNE
+                    if (currentNode.getChanges().map{it.getPath()}.contains(childPath) || currentNode.getChanges().map{it.getOldPath()}.contains(childPath)) return@evaluator Evaluation.INCLUDE_AND_PRUNE
                     return@evaluator Evaluation.EXCLUDE_AND_CONTINUE
                 }
                 .traverse(commitNode).nodes()
 
         val childChangeNodes: MutableList<Node> = ArrayList()
         childNodesWithPath.forEach {
-            val changesWithPath = it.getChanges().filter { it.getProperty("path") == childPath || it.getProperty("oldPath") == childPath }
+            val changesWithPath = it.getChanges().filter { it.getPath() == childPath || it.getOldPath() == childPath }
             assert(changesWithPath.size == 1)
             val targetChangeNode = changesWithPath.first()
             childChangeNodes.add(targetChangeNode)
