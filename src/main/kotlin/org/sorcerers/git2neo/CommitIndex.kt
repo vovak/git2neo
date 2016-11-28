@@ -91,6 +91,7 @@ class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
 
     fun updateChangeParentConnections(commitNode: Node) {
         val connections = RelatedChangeFinder().getChangeConnections(db, commitNode)
+        println("Connections for node ${commitNode}: ${connections.childrenPerChange.values.sumBy { it.size }} ->child, ${connections.parentsPerChange.values.sumBy { it.size }} ->parent")
         connections.parentsPerChange.forEach {
             val change = it.key
             val parents = it.value
@@ -186,6 +187,20 @@ class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
             result.nodes().forEach { changes.add(it.toFileRevision()) }
         }
         return History(changes)
+    }
+
+    fun getChangesHistoriesForCommit(head: Id<Commit>): List<History<FileRevision>> {
+        val result: MutableList<History<FileRevision>> = ArrayList()
+        withDb {
+            val headCommitNode = db.findNode(COMMIT, "id", head.stringId())
+            val changeNodes = headCommitNode.getChanges()
+            changeNodes.forEach {
+                val traversal = db.traversalDescription().depthFirst().relationships(PARENT, Direction.OUTGOING).uniqueness(Uniqueness.NODE_GLOBAL)
+                val history = History(traversal.traverse(it).nodes().map { it.toFileRevision() })
+                result.add(history)
+            }
+        }
+        return result
     }
 }
 
