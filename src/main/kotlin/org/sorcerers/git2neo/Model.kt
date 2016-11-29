@@ -40,7 +40,7 @@ data class FileRevision(
         val id: FileRevisionId,
         val path: String,
         val oldPath: String?,
-        val commitId: CommitId,
+        val commitInfo: CommitInfo,
         val action: Action
 )
 

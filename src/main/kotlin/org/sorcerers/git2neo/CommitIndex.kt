@@ -84,7 +84,7 @@ class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
         if (change.oldPath != null) {
             changeNode.setProperty("oldPath", change.oldPath)
         }
-        changeNode.setProperty("commitId", change.commitId.stringId())
+        changeNode.setProperty("commitId", change.commitInfo.id.stringId())
         commitNode.createRelationshipTo(changeNode, CONTAINS)
     }
 
@@ -143,7 +143,7 @@ class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
                 FileRevisionId(this.getProperty("id") as String),
                 this.getProperty("path") as String,
                 if (hasOldPath) this.getProperty("oldPath") as String else null,
-                CommitId(this.getProperty("commitId") as String),
+                SerializationUtils.deserialize(this.getCommit().getProperty("info") as ByteArray),
                 Action.valueOf(this.getProperty("action") as String)
         )
     }
