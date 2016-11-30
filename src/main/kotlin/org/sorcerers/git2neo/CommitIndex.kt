@@ -235,9 +235,6 @@ class RelatedChangeFinder {
             parentChangeNodes.add(targetChangeNode)
         }
         return parentChangeNodes
-//        parentChangeNodes.forEach {
-//            changeNode.createRelationshipTo(it, PARENT)
-//        }
     }
 
     fun getChildren(db: GraphDatabaseService, changeNode: Node): List<Node> {
@@ -265,9 +262,6 @@ class RelatedChangeFinder {
             childChangeNodes.add(targetChangeNode)
         }
         return childChangeNodes
-//        childChangeNodes.forEach {
-//            it.createRelationshipTo(changeNode, PARENT)
-//        }
     }
 
     fun getChangeConnections(db: GraphDatabaseService, commitNode: Node): ChangeConnections {
