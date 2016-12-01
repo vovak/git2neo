@@ -91,7 +91,7 @@ class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
 
     fun updateChangeParentConnections(commitNode: Node) {
         val connections = RelatedChangeFinder().getChangeConnections(db, commitNode)
-        println("Connections for node ${commitNode}: ${connections.childrenPerChange.values.sumBy { it.size }} ->child, ${connections.parentsPerChange.values.sumBy { it.size }} ->parent")
+        println("Connections for node ${commitNode.id}: ${connections.childrenPerChange.values.sumBy { it.size }} ->child, ${connections.parentsPerChange.values.sumBy { it.size }} ->parent")
         connections.parentsPerChange.forEach {
             val change = it.key
             val parents = it.value
@@ -122,18 +122,25 @@ class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
             val parentNode = findOrCreateCommitNode(it)
             node.createRelationshipTo(parentNode, PARENT)
         }
-
-        //TODO Current impl is quite slow (up to 200 ms/node)
-        //TODO update changes connection with one traversal, try adding index on path/oldPath for change nodes.
-        updateChangesForNewRevision(node)
     }
 
+    fun updateChangeParentConnectionsForAllNodes() {
+        val allNodes = db.findNodes(COMMIT)
+        allNodes.forEach { updateChangeParentConnections(it) }
+    }
+
+
     override fun add(commit: Commit) {
-        withDb { doAdd(commit) }
+        withDb {
+            doAdd(commit)
+        }
     }
 
     override fun addAll(commits: Collection<Commit>) {
-        withDb { commits.forEach { doAdd(it) } }
+        withDb {
+            commits.forEach { doAdd(it) }
+            updateChangeParentConnectionsForAllNodes()
+        }
     }
 
     fun Node.toFileRevision(): FileRevision {
