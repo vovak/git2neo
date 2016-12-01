@@ -91,7 +91,7 @@ class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
 
     fun updateChangeParentConnections(commitNode: Node) {
         val connections = RelatedChangeFinder().getChangeConnections(db, commitNode)
-        println("Connections for node ${commitNode.id}: ${connections.childrenPerChange.values.sumBy { it.size }} ->child, ${connections.parentsPerChange.values.sumBy { it.size }} ->parent")
+//        println("Connections for node ${commitNode.id}: ${connections.childrenPerChange.values.sumBy { it.size }} ->child, ${connections.parentsPerChange.values.sumBy { it.size }} ->parent")
         connections.parentsPerChange.forEach {
             val change = it.key
             val parents = it.value
@@ -126,7 +126,20 @@ class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
 
     fun updateChangeParentConnectionsForAllNodes() {
         val allNodes = db.findNodes(COMMIT)
-        allNodes.forEach { updateChangeParentConnections(it) }
+        println("Updating parent connections for all nodes.")
+        var done = 0
+        var startTime = System.currentTimeMillis()
+        var currentStartTime = startTime
+        allNodes.forEach {
+            updateChangeParentConnections(it)
+            done++
+            if (done % 1000 == 0) {
+                val now = System.currentTimeMillis()
+                println("$done done in ${now - currentStartTime} ms")
+                currentStartTime = now
+            }
+        }
+        println("all $done done in ${System.currentTimeMillis() - startTime} ms")
     }
 
 
@@ -138,7 +151,22 @@ class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
 
     override fun addAll(commits: Collection<Commit>) {
         withDb {
-            commits.forEach { doAdd(it) }
+            println("Adding ${commits.size} nodes to db")
+            val windowSize = 1000
+            var startTime = System.currentTimeMillis()
+            var currentStartTime = startTime
+            commits.forEachIndexed { i, commit -> run {
+                doAdd(commit)
+                if (i > windowSize && i % windowSize == 0) {
+                    val now = System.currentTimeMillis()
+                    val msTaken = now - currentStartTime
+                    currentStartTime = now
+                    println("added $windowSize in $msTaken ms")
+                }
+            } }
+            val totalMs = System.currentTimeMillis() - startTime
+            println("added all nodes in $totalMs ms")
+
             updateChangeParentConnectionsForAllNodes()
         }
     }
