@@ -189,4 +189,31 @@ class CommitIndexTest : CommitIndexTestBase() {
         val changesHistoryHead = index.getChangesHistory(headCommitChange.id, {true})
         Assert.assertEquals(6, changesHistoryHead.items.size)
     }
+
+    @Test
+    fun testWithMergeAddedLater() {
+        val index = getIndex()
+
+        index.add(createCommit("0_left", null, listOf(Triple(Action.CREATED, "a.txt", null))))
+        index.add(createCommit("1_left", "0_left", listOf(Triple(Action.MODIFIED, "a.txt", null))))
+        index.add(createCommit("2_left", "1_left", listOf(Triple(Action.MODIFIED, "a.txt", null))))
+        index.add(createCommit("3_left", "2_left", listOf(Triple(Action.MODIFIED, "a.txt", null))))
+        index.add(createCommit("4_left", "3_left", listOf(Triple(Action.MODIFIED, "a.txt", null))))
+        index.add(createCommit("5_left", "4_left", listOf(Triple(Action.MODIFIED, "a.txt", null))))
+
+        index.add(createCommit("0_right", null, listOf(Triple(Action.CREATED, "a.txt", null))))
+        index.add(createCommit("1_right", "0_right", listOf(Triple(Action.MODIFIED, "a.txt", null))))
+        index.add(createCommit("2_right", "1_right", listOf(Triple(Action.MODIFIED, "a.txt", null))))
+        index.add(createCommit("3_right", "2_right", listOf(Triple(Action.MODIFIED, "a.txt", null))))
+        index.add(createCommit("4_right", "3_right", listOf(Triple(Action.MODIFIED, "a.txt", null))))
+        index.add(createCommit("5_right", "4_right", listOf(Triple(Action.MODIFIED, "a.txt", null))))
+
+        index.add(createCommit("head", "merge", listOf(Triple(Action.MODIFIED, "a.txt", null))))
+        index.add(createCommit("merge", listOf("5_left", "5_right"), emptyList()))
+
+        val wholeHistories = index.getChangesHistoriesForCommit(CommitId("head"))
+        Assert.assertEquals(1, wholeHistories.size)
+        val fileHistory = wholeHistories.first()
+        Assert.assertEquals(13, fileHistory.items.size)
+    }
 }
