@@ -39,7 +39,7 @@ abstract class CommitIndexTestBase {
                     FileRevisionId("${id}#${it.second}"),
                     it.second,
                     it.third,
-                    commitInfo.id,
+                    commitInfo,
                     it.first)
         })
     }
