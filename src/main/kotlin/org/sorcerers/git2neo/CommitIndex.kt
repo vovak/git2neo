@@ -146,6 +146,7 @@ class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
     override fun add(commit: Commit) {
         withDb {
             doAdd(commit)
+            updateChangeParentConnectionsForAllNodes()
         }
     }
 
