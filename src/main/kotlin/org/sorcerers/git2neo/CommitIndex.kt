@@ -240,6 +240,14 @@ class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
         }
         return result
     }
+
+    fun getTotalCommitsCount(): Int {
+        return 0
+    }
+
+    fun getTotalChangesCount(): Int {
+        return 0
+    }
 }
 
 class RelatedChangeFinder {

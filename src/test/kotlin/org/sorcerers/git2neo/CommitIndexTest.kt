@@ -214,6 +214,9 @@ class CommitIndexTest : CommitIndexTestBase() {
         commits.add(createCommit("merge", listOf("5_left", "5_right"), emptyList()))
         index.addAll(commits)
 
+        Assert.assertEquals(14, index.getTotalCommitsCount())
+        Assert.assertEquals(13, index.getTotalChangesCount())
+
         val wholeHistories = index.getChangesHistoriesForCommit(CommitId("head"))
         Assert.assertEquals(1, wholeHistories.size)
         val fileHistory = wholeHistories.first()
