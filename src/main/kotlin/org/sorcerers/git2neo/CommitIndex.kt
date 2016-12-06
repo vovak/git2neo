@@ -156,15 +156,17 @@ class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
             val windowSize = 1000
             var startTime = System.currentTimeMillis()
             var currentStartTime = startTime
-            commits.forEachIndexed { i, commit -> run {
-                doAdd(commit)
-                if (i > windowSize && i % windowSize == 0) {
-                    val now = System.currentTimeMillis()
-                    val msTaken = now - currentStartTime
-                    currentStartTime = now
-                    println("added $windowSize in $msTaken ms")
+            commits.forEachIndexed { i, commit ->
+                run {
+                    doAdd(commit)
+                    if (i > windowSize && i % windowSize == 0) {
+                        val now = System.currentTimeMillis()
+                        val msTaken = now - currentStartTime
+                        currentStartTime = now
+                        println("added $windowSize in $msTaken ms")
+                    }
                 }
-            } }
+            }
             val totalMs = System.currentTimeMillis() - startTime
             println("added all nodes in $totalMs ms")
 
@@ -257,7 +259,7 @@ class RelatedChangeFinder {
                 .evaluator {
                     val currentNode = it.endNode()
                     if (currentNode == commitNode) return@evaluator Evaluation.INCLUDE_AND_CONTINUE
-                    if (currentNode.getChanges().map{it.getPath()}.contains(parentPath)) return@evaluator Evaluation.INCLUDE_AND_PRUNE
+                    if (currentNode.getChanges().map { it.getPath() }.contains(parentPath)) return@evaluator Evaluation.INCLUDE_AND_PRUNE
                     return@evaluator Evaluation.EXCLUDE_AND_CONTINUE
                 }
                 .traverse(commitNode).nodes()
@@ -285,7 +287,7 @@ class RelatedChangeFinder {
                 .evaluator {
                     val currentNode = it.endNode()
                     if (currentNode == commitNode) return@evaluator Evaluation.INCLUDE_AND_CONTINUE
-                    if (currentNode.getChanges().map{it.getPath()}.contains(childPath) || currentNode.getChanges().map{it.getOldPath()}.contains(childPath)) return@evaluator Evaluation.INCLUDE_AND_PRUNE
+                    if (currentNode.getChanges().map { it.getPath() }.contains(childPath) || currentNode.getChanges().map { it.getOldPath() }.contains(childPath)) return@evaluator Evaluation.INCLUDE_AND_PRUNE
                     return@evaluator Evaluation.EXCLUDE_AND_CONTINUE
                 }
                 .traverse(commitNode).nodes()
