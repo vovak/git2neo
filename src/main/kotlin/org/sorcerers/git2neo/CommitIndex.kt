@@ -54,14 +54,6 @@ class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
         })
     }
 
-//    init {
-//        withDb {
-//            db.index().forNodes(COMMIT.name())
-//                    .on("id")
-//                    .create()
-//        }
-//    }
-
     private fun findOrCreateCommitNode(id: CommitId): Node {
         val result: Node?
         val node = db.findNode(COMMIT, "id", id.idString)
@@ -241,13 +233,6 @@ class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
         return result
     }
 
-    fun getTotalCommitsCount(): Int {
-        return 0
-    }
-
-    fun getTotalChangesCount(): Int {
-        return 0
-    }
 }
 
 class RelatedChangeFinder {

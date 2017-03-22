@@ -11,7 +11,7 @@ import java.util.*
 class CommitIndexBulkTest : CommitIndexTestBase() {
     @Test
     fun testManyCommits() {
-        val height = 1000
+        val height = 100
         val index = getIndex()
         val allCommits: MutableList<Commit> = ArrayList()
 
