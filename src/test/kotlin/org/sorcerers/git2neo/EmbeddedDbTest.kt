@@ -39,22 +39,48 @@ class EmbeddedDbTest: CommitIndexTestBase() {
         Assert.assertArrayEquals(reference.toLongArray(), generated.toLongArray())
     }
 
-    fun measureTime(function: (Int) -> Any, input: Int): Long {
+    fun measureTime(function: (Int) -> Any, input: Long): Long {
         val now = System.currentTimeMillis()
-        function.invoke(input)
+        function.invoke(input.toInt())
         return System.currentTimeMillis() - now
     }
 
-    fun testLinearity(inputs: List<Int>, times: List<Long>) {
+    fun isNotAboveLinear(inputs: List<Long>, times: List<Long>): Boolean {
         val linearTimes = generateInputs(Pair(times.first(), times.last()), times.size)
+        val ratios: MutableList<Double> = ArrayList()
         for (i in 1..inputs.size - 2) {
             val actualTime = times[i]
             val idealTime = linearTimes[i]
             //in quadratic case actual time is LOWER than ideal.
+            val ratio = 1.0 * actualTime / idealTime
+            ratios.add(ratio)
         }
+        val avgRatio = ratios.average()
+        val threshold = 0.8
+        return (avgRatio >= threshold)
     }
 
-    fun assertLinearPerformance(function: (Int) -> Any, limits: Pair<Int, Int>, steps: Int) {
+    fun isLinearPerformance(function: (Int) -> Unit, limits: Pair<Long, Long>, steps: Int): Boolean {
+        val inputs = generateInputs(limits, steps)
+        val times = inputs.map { measureTime(function, it) }
+        return isNotAboveLinear(inputs, times)
+    }
 
+    fun waitLinear(t: Int) {
+        Thread.sleep(5 + t.toLong())
+    }
+
+    fun waitQuadratic(t: Int) {
+        Thread.sleep(t.toLong() * t.toLong() + 20)
+    }
+
+    @Test
+    fun testLinearMethodLooksLinear() {
+        Assert.assertTrue(isLinearPerformance({ waitLinear(it) }, Pair(1, 1000), 10))
+    }
+
+    @Test
+    fun testSlowerMethodLooksNonLinear() {
+        Assert.assertFalse(isLinearPerformance({ waitQuadratic(it) }, Pair(1, 100), 10))
     }
 }
