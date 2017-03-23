@@ -2,7 +2,6 @@ package org.sorcerers.git2neo
 
 import org.junit.Assert
 import org.junit.Test
-import java.io.File
 import java.util.*
 
 /**
@@ -10,14 +9,8 @@ import java.util.*
  * Base class for testing the index using an embedded database instead of neo4j in-memory test impl
  */
 
-fun createEmbeddedIndex(path: String): CommitIndex {
-    val dir = File(path)
-    dir.mkdirs()
-    dir.deleteOnExit()
-    return CommitIndexFactory().loadOrCreateCommitIndex(dir)
-}
 
-class EmbeddedDbTest: CommitIndexTestBase() {
+open class TimeComplexityTestBase : CommitIndexTestBase() {
     fun generateInputs(limits: Pair<Long, Long>, steps: Int): List<Long> {
         if (steps < 3) throw IllegalArgumentException("The minimum number of steps is 3")
         if (limits.first >= limits.second) {
@@ -51,16 +44,21 @@ class EmbeddedDbTest: CommitIndexTestBase() {
         for (i in 1..inputs.size - 2) {
             val actualTime = times[i]
             val idealTime = linearTimes[i]
-            //in quadratic case actual time is LOWER than ideal.
+            //in quadratic case actual time is LOWER than ideal: the time function is convex.
             val ratio = 1.0 * actualTime / idealTime
             ratios.add(ratio)
         }
         val avgRatio = ratios.average()
-        val threshold = 0.8
+        println("Average ratio to ideal: $avgRatio")
+        println("Inputs:")
+        println(inputs)
+        println("Times:")
+        println(times)
+        val threshold = 0.9
         return (avgRatio >= threshold)
     }
 
-    fun isLinearPerformance(function: (Int) -> Unit, limits: Pair<Long, Long>, steps: Int): Boolean {
+    fun isLinearPerformance(function: (Int) -> Any, limits: Pair<Long, Long>, steps: Int): Boolean {
         val inputs = generateInputs(limits, steps)
         val times = inputs.map { measureTime(function, it) }
         return isNotAboveLinear(inputs, times)
@@ -70,17 +68,41 @@ class EmbeddedDbTest: CommitIndexTestBase() {
         Thread.sleep(5 + t.toLong())
     }
 
+    fun printLinear(t: Int) {
+        for (i in 1..t) {
+            println(i)
+        }
+    }
+
+    fun printQuadratic(t: Int) {
+        for (i in 1..t) {
+            for (j in 1..i) {
+                println("$j out of $i")
+            }
+        }
+    }
+
     fun waitQuadratic(t: Int) {
         Thread.sleep(t.toLong() * t.toLong() + 20)
     }
 
     @Test
-    fun testLinearMethodLooksLinear() {
-        Assert.assertTrue(isLinearPerformance({ waitLinear(it) }, Pair(1, 1000), 10))
+    fun testLinearMethodLooksLinear1() {
+        Assert.assertTrue(isLinearPerformance({ waitLinear(it) }, Pair(100, 1000), 10))
     }
 
     @Test
-    fun testSlowerMethodLooksNonLinear() {
-        Assert.assertFalse(isLinearPerformance({ waitQuadratic(it) }, Pair(1, 100), 10))
+    fun testLinearMethodLooksLinear2() {
+        Assert.assertTrue(isLinearPerformance({ printLinear(it) }, Pair(100, 10000), 10))
+    }
+
+    @Test
+    fun testSlowerMethodLooksNonLinear1() {
+        Assert.assertFalse(isLinearPerformance({ waitQuadratic(it) }, Pair(10, 100), 5))
+    }
+
+    @Test
+    fun testSlowerMethodLooksNonLinear2() {
+        Assert.assertFalse(isLinearPerformance({ printQuadratic(it) }, Pair(10, 1000), 5))
     }
 }
