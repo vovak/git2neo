@@ -6,7 +6,7 @@ import java.util.*
 
 /**
  * Created by vovak on 3/23/17.
- * Base class for testing the index using an embedded database instead of neo4j in-memory test impl
+ * Base class for testing the time complexity of methods by evaluating the "time vs input size" fun convexity
  */
 
 
@@ -17,18 +17,18 @@ open class TimeComplexityTestBase : CommitIndexTestBase() {
             throw IllegalArgumentException("Lower limit should be less than upper")
         }
         val result: MutableList<Long> = ArrayList()
-        val increment = 1.0 * (limits.second - limits.first) / (steps-1)
+        val increment = 1.0 * (limits.second - limits.first) / (steps - 1)
 
         result.add(limits.first)
-        (1..steps-2).mapTo(result) { Math.round(limits.first + it * increment) }
+        (1..steps - 2).mapTo(result) { Math.round(limits.first + it * increment) }
         result.add(limits.second)
         return result
     }
 
     @Test
     fun testInputGeneration() {
-        val reference = listOf(1L,4,7,10)
-        val generated = generateInputs(Pair(1,10), 4)
+        val reference = listOf(1L, 4, 7, 10)
+        val generated = generateInputs(Pair(1, 10), 4)
         Assert.assertArrayEquals(reference.toLongArray(), generated.toLongArray())
     }
 
@@ -42,10 +42,10 @@ open class TimeComplexityTestBase : CommitIndexTestBase() {
         val linearTimes = generateInputs(Pair(times.first(), times.last()), times.size)
         val ratios: MutableList<Double> = ArrayList()
         for (i in 1..inputs.size - 2) {
-            val actualTime = times[i]
-            val idealTime = linearTimes[i]
+            val timeIncrement = times[i] - times.first()
+            val idealTimeIncrement = linearTimes[i] - times.first()
             //in quadratic case actual time is LOWER than ideal: the time function is convex.
-            val ratio = 1.0 * actualTime / idealTime
+            val ratio = 1.0 * timeIncrement / idealTimeIncrement
             ratios.add(ratio)
         }
         val avgRatio = ratios.average()
@@ -65,7 +65,25 @@ open class TimeComplexityTestBase : CommitIndexTestBase() {
     }
 
     fun waitLinear(t: Int) {
-        Thread.sleep(5 + t.toLong())
+        Thread.sleep(t.toLong())
+    }
+
+    fun waitQuadratic(t: Int) {
+        Thread.sleep(t.toLong() * t.toLong())
+    }
+
+    fun waitConstant(t: Int) {
+        Thread.sleep(t.toLong())
+    }
+
+    fun waitLinearPlusConstant(t: Int) {
+        waitConstant(1000)
+        waitLinear(t)
+    }
+
+    fun waitQuadraticPlusConstant(t: Int) {
+        waitConstant(1000)
+        waitQuadratic(t)
     }
 
     fun printLinear(t: Int) {
@@ -82,10 +100,6 @@ open class TimeComplexityTestBase : CommitIndexTestBase() {
         }
     }
 
-    fun waitQuadratic(t: Int) {
-        Thread.sleep(t.toLong() * t.toLong() + 20)
-    }
-
     @Test
     fun testLinearMethodLooksLinear1() {
         Assert.assertTrue(isLinearPerformance({ waitLinear(it) }, Pair(100, 1000), 10))
@@ -97,6 +111,11 @@ open class TimeComplexityTestBase : CommitIndexTestBase() {
     }
 
     @Test
+    fun testLinearMethodLooksLinear3() {
+        Assert.assertTrue(isLinearPerformance({ waitLinearPlusConstant(it) }, Pair(1, 10), 10))
+    }
+
+    @Test
     fun testSlowerMethodLooksNonLinear1() {
         Assert.assertFalse(isLinearPerformance({ waitQuadratic(it) }, Pair(10, 100), 5))
     }
@@ -105,4 +124,10 @@ open class TimeComplexityTestBase : CommitIndexTestBase() {
     fun testSlowerMethodLooksNonLinear2() {
         Assert.assertFalse(isLinearPerformance({ printQuadratic(it) }, Pair(10, 1000), 5))
     }
+
+    @Test
+    fun testSlowerMethodLooksNonLinear3() {
+        Assert.assertFalse(isLinearPerformance({ waitQuadraticPlusConstant(it) }, Pair(10, 100), 5))
+    }
+
 }
