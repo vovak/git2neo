@@ -127,6 +127,7 @@ open class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
         val startTime = System.currentTimeMillis()
         var currentStartTime = startTime
         allNodes.forEach {
+            println("Updating parent connections for node ${it.getProperty("id")}")
             updateChangeParentConnections(it)
             done++
             if (done % 1000 == 0) {
@@ -164,7 +165,7 @@ open class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
                 }
             }
             val totalMs = System.currentTimeMillis() - startTime
-            println("added all nodes in $totalMs ms")
+            println("added all ${commits.size} nodes in $totalMs ms")
 
             updateChangeParentConnectionsForAllNodes()
         }
