@@ -46,7 +46,7 @@ fun Node.getPath(): String {
     return this.getProperty("path") as String
 }
 
-class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
+open class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
     fun withDb(block: () -> Unit) {
         db.beginTx().use({ tx: Transaction ->
             block.invoke()
@@ -120,7 +120,7 @@ class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
         val allNodes = db.findNodes(COMMIT)
         println("Updating parent connections for all nodes.")
         var done = 0
-        var startTime = System.currentTimeMillis()
+        val startTime = System.currentTimeMillis()
         var currentStartTime = startTime
         allNodes.forEach {
             updateChangeParentConnections(it)
@@ -146,7 +146,7 @@ class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
         withDb {
             println("Adding ${commits.size} nodes to db")
             val windowSize = 1000
-            var startTime = System.currentTimeMillis()
+            val startTime = System.currentTimeMillis()
             var currentStartTime = startTime
             commits.forEachIndexed { i, commit ->
                 run {
