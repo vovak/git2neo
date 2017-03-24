@@ -55,7 +55,10 @@ open class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
     }
 
     init {
-        withDb { db.schema().indexFor(COMMIT).on("id").create() }
+        withDb {
+            db.schema().indexFor(COMMIT).on("id").create()
+            db.schema().indexFor(CHANGE).on("path").create()
+        }
     }
 
     private fun findOrCreateCommitNode(id: CommitId): Node {
