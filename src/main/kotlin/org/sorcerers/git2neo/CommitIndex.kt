@@ -119,12 +119,13 @@ open class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
         val startTime = System.currentTimeMillis()
         var currentStartTime = startTime
         allNodes.forEach {
-            println("Updating parent connections for node ${it.getProperty("id")}")
+//            println("Updating parent connections for node ${it.getProperty("id")}")
             updateChangeParentConnections(it)
             done++
-            if (done % 1000 == 0) {
+            val windowSize = 50
+            if (done % windowSize == 0) {
                 val now = System.currentTimeMillis()
-                println("$done done in ${now - currentStartTime} ms")
+                println("$done done, $windowSize processed in ${now - currentStartTime} ms")
                 currentStartTime = now
             }
         }

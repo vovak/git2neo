@@ -18,8 +18,6 @@ class RelatedChangeFinder {
 
         changeNodes.forEach { result.add(it.getCommit()) }
 
-        println("Found ${result.size} nodes with changed path $path")
-
         return result
     }
 
