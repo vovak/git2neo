@@ -7,7 +7,6 @@ import org.neo4j.graphdb.traversal.Evaluation
 import org.neo4j.graphdb.traversal.Evaluators
 import org.neo4j.graphdb.traversal.Uniqueness
 import java.util.*
-import kotlin.collections.HashMap
 
 class RelatedChangeFinder (val db: GraphDatabaseService) {
     data class ChangeConnections(val parentsPerChange: Map<Node, Collection<Node>>)
