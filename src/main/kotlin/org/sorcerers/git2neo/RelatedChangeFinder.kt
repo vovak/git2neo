@@ -6,7 +6,6 @@ import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.traversal.Evaluation
 import org.neo4j.graphdb.traversal.Evaluators
 import org.neo4j.graphdb.traversal.Uniqueness
-import org.neo4j.helpers.collection.Iterators
 import java.util.*
 
 class RelatedChangeFinder {
@@ -15,12 +14,12 @@ class RelatedChangeFinder {
     fun getCommitNodesWithChangedPath(db: GraphDatabaseService, path: String): Collection<Node> {
         val result = HashSet<Node>()
 
-//        val changeNodes = db.findNodes(CHANGE, "path", path)
-//        changeNodes.forEach { result.add(it.getCommit()) }
+        val changeNodes = db.findNodes(CHANGE, "path", path)
+        changeNodes.forEach { result.add(it.getCommit()) }
 
-        val query = "MATCH (commit:${COMMIT.name()})-[:${CONTAINS.name()}]->(change:${CHANGE.name()}{path:\"$path\"}) return commit"
-        val queryResult = db.execute(query)
-        Iterators.asIterable(queryResult.columnAs<Node>("commit")).forEach { result.add(it) }
+//        val query = "MATCH (commit:${COMMIT.name()})-[:${CONTAINS.name()}]->(change:${CHANGE.name()}{path:\"$path\"}) return commit"
+//        val queryResult = db.execute(query)
+//        Iterators.asIterable(queryResult.columnAs<Node>("commit")).forEach { result.add(it) }
 
         return result
     }
