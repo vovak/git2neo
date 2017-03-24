@@ -23,6 +23,7 @@ fun Node.getChanges(): List<Node> {
 }
 
 fun Node.getCommit(): Node {
+    this.id
     val startNodes = this.relationships.filter { it.isType(CONTAINS) }.map { it.startNode }
     assert(startNodes.size == 1)
     return startNodes.first()
