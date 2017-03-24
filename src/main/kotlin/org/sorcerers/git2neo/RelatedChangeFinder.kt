@@ -22,7 +22,7 @@ class RelatedChangeFinder (val db: GraphDatabaseService) {
         val result = HashSet<Node>()
 
         val changeNodes = db.findNodes(CHANGE, "path", path)
-        changeNodes.forEach { result.add(findCommitById(it.getCommitId())) }
+        changeNodes.forEach { result.add(it.getCommit()) }
 
 //        val query = "MATCH (commit:${COMMIT.name()})-[:${CONTAINS.name()}]->(change:${CHANGE.name()}{path:\"$path\"}) return commit"
 //        val queryResult = db.execute(query)
@@ -36,7 +36,7 @@ class RelatedChangeFinder (val db: GraphDatabaseService) {
         val action = changeNode.getAction()
         val parentPath = (if (action == Action.MOVED) changeNode.getOldPath() else changeNode.getPath()) ?: return emptyList()
 
-        val commitNode = findCommitById(changeNode.getCommitId())
+        val commitNode = changeNode.getCommit()
 
         val parentCandidates = getCommitNodesWithChangedPath(parentPath)
 
