@@ -52,9 +52,10 @@ class RelatedChangeFinder (val db: GraphDatabaseService) {
                 }
                 .traverse(commitNode).nodes()
 
-        assert(commitNode !in parentNodesWithPath)
         val parentChangeNodes: MutableList<Node> = ArrayList()
         parentNodesWithPath.forEach {
+            //getPath invocation here is slow
+            //probably doing the traversal for all paths per commit node will be faster.
             val changesWithPath = it.getChanges().filter { it.getPath() == parentPath }
             assert(changesWithPath.size == 1)
             val targetChangeNode = changesWithPath.first()
