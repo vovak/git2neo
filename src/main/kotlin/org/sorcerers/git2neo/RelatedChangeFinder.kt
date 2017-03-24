@@ -74,7 +74,7 @@ class RelatedChangeFinder {
 
         commitNode.getChanges().forEach {
             parentsPerNode[it] = getParents(db, it)
-            childrenPerNode[it] = getChildren(db, it)
+//            childrenPerNode[it] = getChildren(db, it)
         }
 
         return ChangeConnections(parentsPerNode, childrenPerNode)
