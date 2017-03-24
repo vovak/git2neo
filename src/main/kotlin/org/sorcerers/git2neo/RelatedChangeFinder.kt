@@ -11,18 +11,18 @@ import java.util.*
 class RelatedChangeFinder (val db: GraphDatabaseService) {
     data class ChangeConnections(val parentsPerChange: Map<Node, Collection<Node>>)
 
-    val pathNodesCache: MutableMap<String, Collection<Node>> = HashMap()
+    val pathNodesCache: MutableMap<String, Collection<Long>> = HashMap()
 
     fun findCommitById(id: String): Node {
         return db.findNode(COMMIT, "id", id)
     }
 
-    fun getCommitNodesWithChangedPath(path: String): Collection<Node> {
+    fun getCommitNodesWithChangedPath(path: String): Collection<Long> {
         if (pathNodesCache.containsKey(path)) return pathNodesCache[path]!!
-        val result = HashSet<Node>()
+        val result = HashSet<Long>()
 
         val changeNodes = db.findNodes(CHANGE, "path", path)
-        changeNodes.forEach { result.add(it.getCommit()) }
+        changeNodes.forEach { result.add(it.getCommit().id) }
 
 //        val query = "MATCH (commit:${COMMIT.name()})-[:${CONTAINS.name()}]->(change:${CHANGE.name()}{path:\"$path\"}) return commit"
 //        val queryResult = db.execute(query)
@@ -31,12 +31,12 @@ class RelatedChangeFinder (val db: GraphDatabaseService) {
         return result
     }
 
-    fun getParents(changeNode: Node): List<Node> {
+    fun getParents(changeNode: Node, commitNode: Node): List<Node> {
         //find next parents, if any
         val action = changeNode.getAction()
         val parentPath = (if (action == Action.MOVED) changeNode.getOldPath() else changeNode.getPath()) ?: return emptyList()
 
-        val commitNode = changeNode.getCommit()
+        val commitNodeId = commitNode.id
 
         val parentCandidates = getCommitNodesWithChangedPath(parentPath)
 
@@ -46,8 +46,8 @@ class RelatedChangeFinder (val db: GraphDatabaseService) {
                 .evaluator(Evaluators.excludeStartPosition())
                 .evaluator {
                     val currentNode = it.endNode()
-                    if (currentNode == commitNode) return@evaluator Evaluation.INCLUDE_AND_CONTINUE
-                    if (parentCandidates.contains(currentNode)) return@evaluator Evaluation.INCLUDE_AND_PRUNE
+                    if (currentNode.id == commitNodeId) return@evaluator Evaluation.INCLUDE_AND_CONTINUE
+                    if (parentCandidates.contains(currentNode.id)) return@evaluator Evaluation.INCLUDE_AND_PRUNE
                     return@evaluator Evaluation.EXCLUDE_AND_CONTINUE
                 }
                 .traverse(commitNode).nodes()
@@ -67,7 +67,7 @@ class RelatedChangeFinder (val db: GraphDatabaseService) {
         val parentsPerNode: MutableMap<Node, List<Node>> = HashMap()
 
         commitNode.getChanges().forEach {
-            parentsPerNode[it] = getParents(it)
+            parentsPerNode[it] = getParents(it, commitNode)
         }
 
         return ChangeConnections(parentsPerNode)
