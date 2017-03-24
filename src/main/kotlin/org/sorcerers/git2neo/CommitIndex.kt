@@ -41,6 +41,11 @@ fun Node.getPath(): String {
     return this.getProperty("path") as String
 }
 
+fun Node.getCommitId(): String {
+    return this.getProperty("commitId") as String
+}
+
+
 open class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
     fun withDb(block: () -> Unit) {
         db.beginTx().use({ tx: Transaction ->
@@ -83,8 +88,8 @@ open class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
     }
 
 
-    fun updateChangeParentConnections(commitNode: Node) {
-        val connections = RelatedChangeFinder(db).getChangeConnections(commitNode)
+    fun updateChangeParentConnections(relatedChangeFinder: RelatedChangeFinder, commitNode: Node) {
+        val connections = relatedChangeFinder.getChangeConnections(commitNode)
 //        println("Connections for node ${commitNode.id}: ${connections.childrenPerChange.values.sumBy { it.size }} ->child, ${connections.parentsPerChange.values.sumBy { it.size }} ->parent")
         connections.parentsPerChange.forEach {
             val change = it.key
@@ -96,7 +101,7 @@ open class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
 
     fun updateChangesForNewRevision(commitNode: Node) {
         assert(commitNode.hasLabel(COMMIT))
-        updateChangeParentConnections(commitNode)
+//        updateChangeParentConnections(commitNode)
     }
 
     fun doAdd(commit: Commit) {
@@ -118,9 +123,10 @@ open class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
         var done = 0
         val startTime = System.currentTimeMillis()
         var currentStartTime = startTime
+        val relatedChangeFinder = RelatedChangeFinder(db)
         allNodes.forEach {
 //            println("Updating parent connections for node ${it.getProperty("id")}")
-            updateChangeParentConnections(it)
+            updateChangeParentConnections(relatedChangeFinder, it)
             done++
             val windowSize = 50
             if (done % windowSize == 0) {

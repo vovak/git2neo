@@ -7,20 +7,28 @@ import org.neo4j.graphdb.traversal.Evaluation
 import org.neo4j.graphdb.traversal.Evaluators
 import org.neo4j.graphdb.traversal.Uniqueness
 import java.util.*
+import kotlin.collections.HashMap
 
 class RelatedChangeFinder (val db: GraphDatabaseService) {
     data class ChangeConnections(val parentsPerChange: Map<Node, Collection<Node>>)
 
+    val pathNodesCache: MutableMap<String, Collection<Node>> = HashMap()
+
+    fun findCommitById(id: String): Node {
+        return db.findNode(COMMIT, "id", id)
+    }
+
     fun getCommitNodesWithChangedPath(path: String): Collection<Node> {
+        if (pathNodesCache.containsKey(path)) return pathNodesCache[path]!!
         val result = HashSet<Node>()
 
         val changeNodes = db.findNodes(CHANGE, "path", path)
-        changeNodes.forEach { result.add(it.getCommit()) }
+        changeNodes.forEach { result.add(findCommitById(it.getCommitId())) }
 
 //        val query = "MATCH (commit:${COMMIT.name()})-[:${CONTAINS.name()}]->(change:${CHANGE.name()}{path:\"$path\"}) return commit"
 //        val queryResult = db.execute(query)
 //        Iterators.asIterable(queryResult.columnAs<Node>("commit")).forEach { result.add(it) }
-
+        pathNodesCache[path] = result
         return result
     }
 
@@ -29,7 +37,7 @@ class RelatedChangeFinder (val db: GraphDatabaseService) {
         val action = changeNode.getAction()
         val parentPath = (if (action == Action.MOVED) changeNode.getOldPath() else changeNode.getPath()) ?: return emptyList()
 
-        val commitNode = changeNode.getCommit()
+        val commitNode = findCommitById(changeNode.getCommitId())
 
         val parentCandidates = getCommitNodesWithChangedPath(parentPath)
 
