@@ -84,7 +84,7 @@ open class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
 
 
     fun updateChangeParentConnections(commitNode: Node) {
-        val connections = RelatedChangeFinder().getChangeConnections(db, commitNode)
+        val connections = RelatedChangeFinder(db).getChangeConnections(commitNode)
 //        println("Connections for node ${commitNode.id}: ${connections.childrenPerChange.values.sumBy { it.size }} ->child, ${connections.parentsPerChange.values.sumBy { it.size }} ->parent")
         connections.parentsPerChange.forEach {
             val change = it.key

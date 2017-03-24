@@ -8,10 +8,10 @@ import org.neo4j.graphdb.traversal.Evaluators
 import org.neo4j.graphdb.traversal.Uniqueness
 import java.util.*
 
-class RelatedChangeFinder {
+class RelatedChangeFinder (val db: GraphDatabaseService) {
     data class ChangeConnections(val parentsPerChange: Map<Node, Collection<Node>>)
 
-    fun getCommitNodesWithChangedPath(db: GraphDatabaseService, path: String): Collection<Node> {
+    fun getCommitNodesWithChangedPath(path: String): Collection<Node> {
         val result = HashSet<Node>()
 
         val changeNodes = db.findNodes(CHANGE, "path", path)
@@ -24,14 +24,14 @@ class RelatedChangeFinder {
         return result
     }
 
-    fun getParents(db: GraphDatabaseService, changeNode: Node): List<Node> {
+    fun getParents(changeNode: Node): List<Node> {
         //find next parents, if any
         val action = changeNode.getAction()
         val parentPath = (if (action == Action.MOVED) changeNode.getOldPath() else changeNode.getPath()) ?: return emptyList()
 
         val commitNode = changeNode.getCommit()
 
-        val parentCandidates = getCommitNodesWithChangedPath(db, parentPath)
+        val parentCandidates = getCommitNodesWithChangedPath(parentPath)
 
         val parentNodesWithPath = db.traversalDescription()
                 .uniqueness(Uniqueness.NODE_GLOBAL)
@@ -56,11 +56,11 @@ class RelatedChangeFinder {
         return parentChangeNodes
     }
 
-    fun getChangeConnections(db: GraphDatabaseService, commitNode: Node): ChangeConnections {
+    fun getChangeConnections(commitNode: Node): ChangeConnections {
         val parentsPerNode: MutableMap<Node, List<Node>> = HashMap()
 
         commitNode.getChanges().forEach {
-            parentsPerNode[it] = getParents(db, it)
+            parentsPerNode[it] = getParents(it)
         }
 
         return ChangeConnections(parentsPerNode)
