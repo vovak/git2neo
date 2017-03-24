@@ -16,31 +16,28 @@ val CHANGE: Label = Label { "change" }
 val PARENT: RelationshipType = RelationshipType { "PARENT" }
 val CONTAINS: RelationshipType = RelationshipType { "CONTAINS" }
 
+//TODO check node type (it should not be possible to call *ChangeNode*.getChanges())
+
 fun Node.getChanges(): List<Node> {
-    assert(this.hasLabel(COMMIT))
     return this.relationships.filter { it.isType(CONTAINS) }.map { it.endNode }
 }
 
 fun Node.getCommit(): Node {
-    assert(this.hasLabel(CHANGE))
     val startNodes = this.relationships.filter { it.isType(CONTAINS) }.map { it.startNode }
     assert(startNodes.size == 1)
     return startNodes.first()
 }
 
 fun Node.getAction(): Action {
-    assert(this.hasLabel(CHANGE))
     return Action.valueOf(getProperty("action") as String)
 }
 
 fun Node.getOldPath(): String? {
-    assert(this.hasLabel(CHANGE))
     if (!this.hasProperty("oldPath")) return null
     return this.getProperty("oldPath") as String
 }
 
 fun Node.getPath(): String {
-    assert(this.hasLabel(CHANGE))
     return this.getProperty("path") as String
 }
 
