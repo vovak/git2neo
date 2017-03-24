@@ -95,12 +95,6 @@ open class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
             parents.forEach { change.createRelationshipTo(it, PARENT) }
         }
 
-        connections.childrenPerChange.forEach {
-            val change = it.key
-            val children = it.value
-            children.forEach { it.createRelationshipTo(change, PARENT) }
-        }
-
     }
 
     fun updateChangesForNewRevision(commitNode: Node) {
