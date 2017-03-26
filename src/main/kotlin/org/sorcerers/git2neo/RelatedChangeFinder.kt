@@ -8,7 +8,7 @@ import org.neo4j.graphdb.traversal.Evaluators
 import org.neo4j.graphdb.traversal.Uniqueness
 import java.util.*
 
-class RelatedChangeFinder (val db: GraphDatabaseService) {
+class RelatedChangeFinder(val db: GraphDatabaseService) {
     data class ChangeConnections(val parentsPerChange: Map<Node, Collection<Node>>)
 
     val pathNodesCache: MutableMap<String, Collection<Long>> = HashMap()
@@ -17,59 +17,89 @@ class RelatedChangeFinder (val db: GraphDatabaseService) {
         return db.findNode(COMMIT, "id", id)
     }
 
-    fun getCommitNodesWithChangedPath(path: String): Collection<Long> {
-        if (pathNodesCache.containsKey(path)) return pathNodesCache[path]!!
-        val result = HashSet<Long>()
+    fun getCommitNodesPerChangedPaths(paths: Collection<String>): Map<String, Collection<Long>> {
+        val result: MutableMap<String, Collection<Long>> = HashMap()
+        val pathsToSearch: MutableSet<String> = HashSet()
+        paths.forEach {
+            run {
+                if (pathNodesCache.containsKey(it)) {
+                    result[it] = pathNodesCache[it]!!
+                } else {
+                    pathsToSearch.add(it)
+                }
+            }
+        }
 
-        val changeNodes = db.findNodes(CHANGE, "path", path)
-        changeNodes.forEach { result.add(it.getCommit().id) }
+        pathsToSearch.forEach {
+            run {
+                val idsForPaths = db.findNodes(CHANGE, "path", it).map { it.getCommit().id }.asSequence().toList()
+                result[it] = HashSet(idsForPaths)
+            }
+        }
+
+
+        result.forEach { path, nodes -> pathNodesCache[path] = nodes }
 
 //        val query = "MATCH (commit:${COMMIT.name()})-[:${CONTAINS.name()}]->(change:${CHANGE.name()}{path:\"$path\"}) return commit"
 //        val queryResult = db.execute(query)
 //        Iterators.asIterable(queryResult.columnAs<Node>("commit")).forEach { result.add(it) }
-        pathNodesCache[path] = result
         return result
     }
 
-    fun getParents(changeNode: Node, commitNode: Node): List<Node> {
-        //find next parents, if any
-        val action = changeNode.getAction()
-        val parentPath = (if (action == Action.MOVED) changeNode.getOldPath() else changeNode.getPath()) ?: return emptyList()
+    fun getParents(commitNode: Node): Map<Node, List<Node>> {
+        val paths: MutableSet<String> = HashSet()
+        val nodesPerPath: MutableMap<String, Node> = HashMap()
+        commitNode.getChanges().forEach {
+            val action = it.getAction()
+            val parentPath = (if (action == Action.MOVED) it.getOldPath() else it.getPath()) ?: return emptyMap()
+            paths.add(parentPath)
+            nodesPerPath[parentPath] = it
+        }
 
         val commitNodeId = commitNode.id
 
-        val parentCandidates = getCommitNodesWithChangedPath(parentPath)
+        val parentCandidates = getCommitNodesPerChangedPaths(paths)
 
-        val parentNodesWithPath = db.traversalDescription()
+        val remainingIds: MutableSet<Long> = HashSet(parentCandidates.values.flatten())
+
+        val parentNodesWithOneOfPaths = db.traversalDescription()
                 .uniqueness(Uniqueness.NODE_GLOBAL)
                 .relationships(PARENT, Direction.OUTGOING)
                 .evaluator(Evaluators.excludeStartPosition())
                 .evaluator {
                     val currentNode = it.endNode()
                     if (currentNode.id == commitNodeId) return@evaluator Evaluation.INCLUDE_AND_CONTINUE
-                    if (parentCandidates.contains(currentNode.id)) return@evaluator Evaluation.INCLUDE_AND_PRUNE
+                    if (remainingIds.contains(currentNode.id)) {
+                        remainingIds.remove(currentNode.id)
+                        return@evaluator if (remainingIds.isEmpty()) Evaluation.INCLUDE_AND_PRUNE else Evaluation.INCLUDE_AND_CONTINUE
+                    }
                     return@evaluator Evaluation.EXCLUDE_AND_CONTINUE
                 }
                 .traverse(commitNode).nodes()
 
-        val parentChangeNodes: MutableList<Node> = ArrayList()
-        parentNodesWithPath.forEach {
-            //getPath invocation here is slow
-            //probably doing the traversal for all paths per commit node will be faster.
-            val changesWithPath = it.getChanges().filter { it.getPath() == parentPath }
-            assert(changesWithPath.size == 1)
-            val targetChangeNode = changesWithPath.first()
-            parentChangeNodes.add(targetChangeNode)
+        val parentNodesPerNode: MutableMap<Node, MutableList<Node>> = HashMap()
+
+        parentNodesWithOneOfPaths.forEach {
+            val changeNodes = it.getChanges()
+            val foundPerPath: MutableMap<String, Node> = HashMap()
+            changeNodes.forEach { foundPerPath[it.getPath()] = it }
+
+            nodesPerPath.forEach {
+                val path = it.key
+                val node = it.value
+                if (foundPerPath.containsKey(path)) {
+                    if (!parentNodesPerNode.containsKey(node)) parentNodesPerNode[node] = ArrayList()
+                    parentNodesPerNode[node]!!.add(foundPerPath[path]!!)
+                }
+            }
+
         }
-        return parentChangeNodes
+
+        return parentNodesPerNode
     }
 
     fun getChangeConnections(commitNode: Node): ChangeConnections {
-        val parentsPerNode: MutableMap<Node, List<Node>> = HashMap()
-
-        commitNode.getChanges().forEach {
-            parentsPerNode[it] = getParents(it, commitNode)
-        }
+        val parentsPerNode: Map<Node, List<Node>> = getParents(commitNode)
 
         return ChangeConnections(parentsPerNode)
     }
