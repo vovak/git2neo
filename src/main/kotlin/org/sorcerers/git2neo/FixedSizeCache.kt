@@ -9,7 +9,10 @@ class FixedSizeCache<K,V>(val sizeLimit: Int) {
     fun containsKey(key: K) = map.containsKey(key)
 
     fun put(key: K, value: V): Unit {
-        if (map.size > sizeLimit) map.clear()
+        if (map.size > sizeLimit) {
+            println("Clearing cache: exceeded $sizeLimit entries")
+            map.clear()
+        }
         map[key] = value
     }
 
