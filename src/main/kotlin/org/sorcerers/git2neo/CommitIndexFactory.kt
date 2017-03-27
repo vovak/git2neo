@@ -1,6 +1,7 @@
 package org.sorcerers.git2neo
 
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
+import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import java.io.File
 
 /**
@@ -10,6 +11,7 @@ import java.io.File
 class CommitIndexFactory {
     fun loadOrCreateCommitIndex(dir: File): CommitIndex {
         val db = GraphDatabaseFactory().newEmbeddedDatabaseBuilder(dir)
+                .setConfig(GraphDatabaseSettings.keep_logical_logs, "false")
                 .newGraphDatabase()
         Runtime.getRuntime().addShutdownHook(Thread({
             println("shutting down db")
