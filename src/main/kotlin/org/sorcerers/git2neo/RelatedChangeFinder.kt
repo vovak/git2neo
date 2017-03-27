@@ -13,7 +13,7 @@ class RelatedChangeFinder(val db: GraphDatabaseService) {
 
     val intern: StringIntern = StringIntern()
 
-    val pathNodesCache: MutableMap<String, Collection<Long>> = HashMap()
+    val pathNodesCache: FixedSizeCache<String, Collection<Long>> = FixedSizeCache(10000)
 
     fun findCommitById(id: String): Node {
         return db.findNode(COMMIT, "id", id)
@@ -25,7 +25,7 @@ class RelatedChangeFinder(val db: GraphDatabaseService) {
         paths.forEach {
             run {
                 if (pathNodesCache.containsKey(it)) {
-                    result[it] = pathNodesCache[it]!!
+                    result[it] = pathNodesCache.get(it)!!
                 } else {
                     pathsToSearch.add(it)
                 }
@@ -40,7 +40,7 @@ class RelatedChangeFinder(val db: GraphDatabaseService) {
         }
 
 //TODO: uncommenting this line enables caching and causes OOM
-        result.forEach { path, nodes -> pathNodesCache[path] = nodes }
+        result.forEach { path, nodes -> pathNodesCache.put(path, nodes) }
 
 //        val query = "MATCH (commit:${COMMIT.name()})-[:${CONTAINS.name()}]->(change:${CHANGE.name()}{path:\"$path\"}) return commit"
 //        val queryResult = db.execute(query)

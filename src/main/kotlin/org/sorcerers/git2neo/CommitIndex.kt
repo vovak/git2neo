@@ -51,6 +51,7 @@ open class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
         db.beginTx().use({ tx: Transaction ->
             block.invoke()
             tx.success()
+            tx.close()
         })
     }
 
@@ -88,7 +89,8 @@ open class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
     }
 
 
-    fun updateChangeParentConnections(relatedChangeFinder: RelatedChangeFinder, commitNode: Node) {
+    fun updateChangeParentConnections(relatedChangeFinder: RelatedChangeFinder, commitNodeId: Long) {
+        val commitNode = db.getNodeById(commitNodeId)
         val connections = relatedChangeFinder.getChangeConnections(commitNode)
 //        println("Connections for node ${commitNode.id}: ${connections.childrenPerChange.values.sumBy { it.size }} ->child, ${connections.parentsPerChange.values.sumBy { it.size }} ->parent")
         connections.parentsPerChange.forEach {
@@ -118,23 +120,40 @@ open class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
     }
 
     fun updateChangeParentConnectionsForAllNodes() {
-        val allNodes = db.findNodes(COMMIT)
+        var allNodes: MutableList<Long> = ArrayList()
+        withDb {
+            db.findNodes(COMMIT).forEach { allNodes.add(it.id) }
+        }
         println("Updating parent connections for all nodes.")
         var done = 0
         val startTime = System.currentTimeMillis()
         var currentStartTime = startTime
         val relatedChangeFinder = RelatedChangeFinder(db)
+
+        val chunk: MutableList<Long> = ArrayList()
+        val windowSize = 1000
+
+        fun processChunk() {
+            withDb {
+                chunk.forEach {
+                    updateChangeParentConnections(relatedChangeFinder, it)
+                }
+            }
+            val now = System.currentTimeMillis()
+            println("$done done, ${chunk.size} processed in ${1.0 * (now - currentStartTime) / 1000} s")
+            currentStartTime = now
+            chunk.clear()
+        }
+
         allNodes.forEach {
-//            println("Updating parent connections for node ${it.getProperty("id")}")
-            updateChangeParentConnections(relatedChangeFinder, it)
+            //            println("Updating parent connections for node ${it.getProperty("id")}")
+            chunk.add(it)
             done++
-            val windowSize = 50
-            if (done % windowSize == 0) {
-                val now = System.currentTimeMillis()
-                println("$done done, $windowSize processed in ${now - currentStartTime} ms")
-                currentStartTime = now
+            if (done % windowSize == 0 && done > 0) {
+                processChunk()
             }
         }
+        processChunk()
         println("all $done done in ${System.currentTimeMillis() - startTime} ms")
     }
 
@@ -142,32 +161,41 @@ open class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
     override fun add(commit: Commit) {
         withDb {
             doAdd(commit)
-            updateChangeParentConnectionsForAllNodes()
         }
+        updateChangeParentConnectionsForAllNodes()
     }
 
     override fun addAll(commits: Collection<Commit>) {
-        withDb {
-            println("Adding ${commits.size} nodes to db")
-            val windowSize = 1000
-            val startTime = System.currentTimeMillis()
-            var currentStartTime = startTime
-            commits.forEachIndexed { i, commit ->
-                run {
-                    doAdd(commit)
-                    if (i > windowSize && i % windowSize == 0) {
-                        val now = System.currentTimeMillis()
-                        val msTaken = now - currentStartTime
-                        currentStartTime = now
-                        println("added $windowSize in $msTaken ms")
-                    }
+        println("Adding ${commits.size} nodes to db")
+        val windowSize = 1000
+        val startTime = System.currentTimeMillis()
+        var currentStartTime = startTime
+        val currentChunk: MutableList<Commit> = ArrayList()
+
+        fun flushToDb() {
+            println("flushing $windowSize commits to db...")
+            withDb { currentChunk.forEach { doAdd(it) } }
+            println("done")
+            currentChunk.clear()
+        }
+
+        commits.forEachIndexed { i, commit ->
+            run {
+                currentChunk.add(commit)
+                if (i > windowSize && i % windowSize == 0) {
+                    flushToDb()
+                    val now = System.currentTimeMillis()
+                    val msTaken = now - currentStartTime
+                    currentStartTime = now
+                    println("added $windowSize in $msTaken ms")
                 }
             }
-            val totalMs = System.currentTimeMillis() - startTime
-            println("added all ${commits.size} nodes in $totalMs ms")
-
-            updateChangeParentConnectionsForAllNodes()
         }
+        flushToDb()
+        val totalMs = System.currentTimeMillis() - startTime
+        println("added all ${commits.size} nodes in $totalMs ms")
+
+        updateChangeParentConnectionsForAllNodes()
     }
 
     fun Node.toFileRevision(): FileRevision {
