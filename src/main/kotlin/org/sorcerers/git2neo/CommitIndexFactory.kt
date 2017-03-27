@@ -7,9 +7,10 @@ import java.io.File
  * @author vovak
  * @since 22/11/16
  */
-class CommitIndexFactory() {
+class CommitIndexFactory {
     fun loadOrCreateCommitIndex(dir: File): CommitIndex {
-        val db = GraphDatabaseFactory().newEmbeddedDatabase(dir)
+        val db = GraphDatabaseFactory().newEmbeddedDatabaseBuilder(dir)
+                .newGraphDatabase()
         Runtime.getRuntime().addShutdownHook(Thread({
             println("shutting down db")
             db.shutdown()
