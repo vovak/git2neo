@@ -11,6 +11,8 @@ import java.util.*
 class RelatedChangeFinder(val db: GraphDatabaseService) {
     data class ChangeConnections(val parentsPerChange: Map<Node, Collection<Node>>)
 
+    val intern: StringIntern = StringIntern()
+
     val pathNodesCache: MutableMap<String, Collection<Long>> = HashMap()
 
     fun findCommitById(id: String): Node {
@@ -37,7 +39,7 @@ class RelatedChangeFinder(val db: GraphDatabaseService) {
             }
         }
 
-
+//TODO: uncommenting this line enables caching and causes OOM
         result.forEach { path, nodes -> pathNodesCache[path] = nodes }
 
 //        val query = "MATCH (commit:${COMMIT.name()})-[:${CONTAINS.name()}]->(change:${CHANGE.name()}{path:\"$path\"}) return commit"
@@ -52,7 +54,7 @@ class RelatedChangeFinder(val db: GraphDatabaseService) {
         commitNode.getChanges().forEach {
             val action = it.getAction()
             val parentPath = (if (action == Action.MOVED) it.getOldPath() else it.getPath()) ?: return emptyMap()
-            paths.add(parentPath)
+            paths.add(intern.intern(parentPath))
             nodesPerPath[parentPath] = it
         }
 
