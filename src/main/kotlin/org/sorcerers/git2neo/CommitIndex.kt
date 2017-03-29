@@ -60,7 +60,10 @@ open class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
             val commitIndexAbsent = db.schema().getIndexes(COMMIT).none()
             val changeIndexAbsent = db.schema().getIndexes(CHANGE).none()
             if (commitIndexAbsent) db.schema().indexFor(COMMIT).on("id").create()
-            if (changeIndexAbsent) db.schema().indexFor(CHANGE).on("path").create()
+            if (changeIndexAbsent) {
+                db.schema().indexFor(CHANGE).on("path").create()
+                db.schema().indexFor(CHANGE).on("id").create()
+            }
         }
     }
 
@@ -201,7 +204,6 @@ open class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
     }
 
     fun Node.toFileRevision(): FileRevision {
-        assert(this.hasLabel(CHANGE))
         val hasOldPath = this.hasProperty("oldPath")
         return FileRevision(
                 FileRevisionId(this.getProperty("id") as String),
@@ -213,7 +215,6 @@ open class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
     }
 
     fun Node.toCommit(): Commit {
-        assert(this.hasLabel(COMMIT))
         val changeNodes = this.relationships.filter { it.isType(CONTAINS) }.map { it.endNode }
 
         return Commit(
