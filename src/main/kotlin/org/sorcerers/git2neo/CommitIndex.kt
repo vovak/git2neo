@@ -57,10 +57,10 @@ open class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
 
     init {
         withDb {
-            val commitIndexExists = db.schema().getIndexes(COMMIT).none()
-            val changeIndexExists = db.schema().getIndexes(CHANGE).none()
-            if (!commitIndexExists) db.schema().indexFor(COMMIT).on("id").create()
-            if (!changeIndexExists) db.schema().indexFor(CHANGE).on("path").create()
+            val commitIndexAbsent = db.schema().getIndexes(COMMIT).none()
+            val changeIndexAbsent = db.schema().getIndexes(CHANGE).none()
+            if (commitIndexAbsent) db.schema().indexFor(COMMIT).on("id").create()
+            if (changeIndexAbsent) db.schema().indexFor(CHANGE).on("path").create()
         }
     }
 
