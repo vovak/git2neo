@@ -33,13 +33,11 @@ class RelatedChangeFinder(val db: GraphDatabaseService) {
         }
 
         pathsToSearch.forEach {
-            run {
-                val idsForPaths = db.findNodes(CHANGE, "path", it).map { it.getCommit().id }.asSequence().toList()
-                result[it] = HashSet(idsForPaths)
-            }
+            val idsForPaths = db.findNodes(CHANGE, "path", it).map { it.getCommit().id }.asSequence().toList()
+            result[it] = HashSet(idsForPaths)
+
         }
 
-//TODO: uncommenting this line enables caching and causes OOM
         result.forEach { path, nodes -> pathNodesCache.put(path, nodes) }
 
 //        val query = "MATCH (commit:${COMMIT.name()})-[:${CONTAINS.name()}]->(change:${CHANGE.name()}{path:\"$path\"}) return commit"
@@ -50,12 +48,20 @@ class RelatedChangeFinder(val db: GraphDatabaseService) {
 
     fun getParents(commitNode: Node): Map<Node, List<Node>> {
         val paths: MutableSet<String> = HashSet()
-        val nodesPerPath: MutableMap<String, Node> = HashMap()
-        commitNode.getChanges().forEach {
-            val action = it.getAction()
-            val parentPath = (if (action == Action.MOVED) it.getOldPath() else it.getPath()) ?: return emptyMap()
+        val nodesPerPath: MutableMap<String, MutableCollection<Node>> = HashMap()
+
+        fun recordParentPathForNode(parentPath: String?, changeNode: Node) {
+            if (parentPath == null) return
             paths.add(intern.intern(parentPath))
-            nodesPerPath[parentPath] = it
+            if (parentPath !in nodesPerPath) nodesPerPath[parentPath] = ArrayList()
+            nodesPerPath[parentPath]!!.add(changeNode)
+        }
+
+        commitNode.getChanges().forEach {
+            val path = it.getPath()
+            val oldPath = it.getOldPath()
+            recordParentPathForNode(path, it)
+            recordParentPathForNode(oldPath, it)
         }
 
         val commitNodeId = commitNode.id
@@ -88,10 +94,11 @@ class RelatedChangeFinder(val db: GraphDatabaseService) {
 
             nodesPerPath.forEach {
                 val path = it.key
-                val node = it.value
-                if (foundPerPath.containsKey(path)) {
-                    if (!parentNodesPerNode.containsKey(node)) parentNodesPerNode[node] = ArrayList()
-                    parentNodesPerNode[node]!!.add(foundPerPath[path]!!)
+                it.value.forEach { node ->
+                    if (foundPerPath.containsKey(path)) {
+                        if (!parentNodesPerNode.containsKey(node)) parentNodesPerNode[node] = ArrayList()
+                        parentNodesPerNode[node]!!.add(foundPerPath[path]!!)
+                    }
                 }
             }
 
