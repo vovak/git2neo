@@ -128,7 +128,7 @@ open class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
         }
     }
 
-    fun processNodes(nodeIds: List<Long>, workerIndex: Int, relatedChangeFinder: RelatedChangeFinder): List<RelatedChangeFinder.ChangeConnections> {
+    fun processNodes(nodeIds: List<Long>, chunkIndex: Int, relatedChangeFinder: RelatedChangeFinder): List<RelatedChangeFinder.ChangeConnections> {
         val total = nodeIds.size
         var done = 0
         val startTime = System.currentTimeMillis()
@@ -145,7 +145,7 @@ open class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
                 }
             }
             val now = System.currentTimeMillis()
-            println("Worker $workerIndex: $done/$total done, ${chunk.size} processed in ${1.0 * (now - currentStartTime) / 1000} s")
+            println("Chunk $chunkIndex: $done/$total done, ${chunk.size} processed in ${1.0 * (now - currentStartTime) / 1000} s")
             currentStartTime = now
             chunk.clear()
         }
@@ -159,7 +159,7 @@ open class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
             }
         }
         processChunk()
-        println("Worker $workerIndex: all $done done in ${System.currentTimeMillis() - startTime} ms")
+        println("Chunk $chunkIndex: all $done done in ${System.currentTimeMillis() - startTime} ms")
         return connections
     }
 
@@ -174,7 +174,8 @@ open class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
     }
 
     fun createRelationshipConnectionsInBulk(connections: Collection<RelatedChangeFinder.ChangeConnections>) {
-        val connectionsPerTransaction = 1000
+        val connectionsPerTransaction = 200
+        val total = connections.size
 
         val startTime = System.currentTimeMillis()
         var currentStartTime = startTime
@@ -190,12 +191,12 @@ open class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
         connections.forEachIndexed { i, connection ->
             run {
                 currentChunk.add(connection)
-                if (i > connectionsPerTransaction && i % connectionsPerTransaction == 0) {
+                if (i >= connectionsPerTransaction && i % connectionsPerTransaction == 0) {
                     flushToDb()
                     val now = System.currentTimeMillis()
                     val msTaken = now - currentStartTime
                     currentStartTime = now
-                    println("added $connectionsPerTransaction in $msTaken ms")
+                    println("added $connectionsPerTransaction in $msTaken ms, $i/$total done")
                 }
             }
         }
@@ -209,7 +210,7 @@ open class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
             db.findNodes(COMMIT).forEach { allNodes.add(it.id) }
         }
         println("Updating parent connections for all nodes.")
-        val chunkSizeLimit = allNodes.size / nCores + 1
+        val chunkSizeLimit = allNodes.size / (nCores*10) + 1
         println("$nCores cores available, will use $nCores threads for change layer build, max $chunkSizeLimit nodes per thread")
         val nodeChunks: MutableList<List<Long>> = ArrayList()
 
@@ -231,7 +232,7 @@ open class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
         val totalChangesInChunks = nodeChunks.map { it.size }.sum()
         println("$totalChangesInChunks nodes in chunks from ${allNodes.size} total")
 
-        val executorService = Executors.newFixedThreadPool(nodeChunks.size)
+        val executorService = Executors.newFixedThreadPool(nCores)
 
         val jobs: MutableList<Callable<List<RelatedChangeFinder.ChangeConnections>>> = ArrayList()
         val relatedChangeFinder = RelatedChangeFinder(db)
