@@ -4,6 +4,8 @@ import org.apache.commons.lang3.SerializationUtils
 import org.neo4j.graphdb.*
 import org.neo4j.graphdb.traversal.Uniqueness
 import java.util.*
+import java.util.concurrent.Callable
+import java.util.concurrent.Executors
 
 
 /**
@@ -94,21 +96,23 @@ open class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
     }
 
 
-    fun updateChangeParentConnections(relatedChangeFinder: RelatedChangeFinder, commitNodeId: Long) {
+    fun getChangeParentsConnections(relatedChangeFinder: RelatedChangeFinder, commitNodeId: Long): RelatedChangeFinder.ChangeConnections {
         val commitNode = db.getNodeById(commitNodeId)
         val connections = relatedChangeFinder.getChangeConnections(commitNode)
-//        println("Connections for node ${commitNode.id}: ${connections.childrenPerChange.values.sumBy { it.size }} ->child, ${connections.parentsPerChange.values.sumBy { it.size }} ->parent")
-        connections.parentsPerChange.forEach {
-            val change = it.key
-            val parents = it.value
-            parents.forEach { change.createRelationshipTo(it, PARENT) }
-        }
+        return connections
+    }
 
+    fun createChangeConnectionRelations(connections: RelatedChangeFinder.ChangeConnections) {
+        connections.parentsPerChange.forEach {
+            val change = db.getNodeById(it.key)
+            val parents = it.value
+            parents.forEach { change.createRelationshipTo(db.getNodeById(it), PARENT) }
+        }
     }
 
     fun updateChangesForNewRevision(commitNode: Node) {
         assert(commitNode.hasLabel(COMMIT))
-//        updateChangeParentConnections(commitNode)
+//        getChangeParentsConnections(commitNode)
     }
 
     fun doAdd(commit: Commit) {
@@ -124,33 +128,29 @@ open class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
         }
     }
 
-    fun updateChangeParentConnectionsForAllNodes() {
-        var allNodes: MutableList<Long> = ArrayList()
-        withDb {
-            db.findNodes(COMMIT).forEach { allNodes.add(it.id) }
-        }
-        println("Updating parent connections for all nodes.")
+    fun processNodes(nodeIds: List<Long>, workerIndex: Int, relatedChangeFinder: RelatedChangeFinder): List<RelatedChangeFinder.ChangeConnections> {
+        val total = nodeIds.size
         var done = 0
         val startTime = System.currentTimeMillis()
         var currentStartTime = startTime
-        val relatedChangeFinder = RelatedChangeFinder(db)
+
 
         val chunk: MutableList<Long> = ArrayList()
-        val windowSize = 1000
-
+        val windowSize = 200
+        val connections: MutableList<RelatedChangeFinder.ChangeConnections> = ArrayList()
         fun processChunk() {
             withDb {
                 chunk.forEach {
-                    updateChangeParentConnections(relatedChangeFinder, it)
+                    connections.add(getChangeParentsConnections(relatedChangeFinder, it))
                 }
             }
             val now = System.currentTimeMillis()
-            println("$done done, ${chunk.size} processed in ${1.0 * (now - currentStartTime) / 1000} s")
+            println("Worker $workerIndex: $done/$total done, ${chunk.size} processed in ${1.0 * (now - currentStartTime) / 1000} s")
             currentStartTime = now
             chunk.clear()
         }
 
-        allNodes.forEach {
+        nodeIds.forEach {
             //            println("Updating parent connections for node ${it.getProperty("id")}")
             chunk.add(it)
             done++
@@ -159,7 +159,94 @@ open class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
             }
         }
         processChunk()
-        println("all $done done in ${System.currentTimeMillis() - startTime} ms")
+        println("Worker $workerIndex: all $done done in ${System.currentTimeMillis() - startTime} ms")
+        return connections
+    }
+
+    fun getParentConnectionsSearchJob(nodeIds: List<Long>, workerIndex: Int, relatedChangeFinder: RelatedChangeFinder): Callable<List<RelatedChangeFinder.ChangeConnections>> {
+        return Callable {
+            try {
+                return@Callable processNodes(nodeIds, workerIndex, relatedChangeFinder)
+            } catch (e: Throwable) {
+                throw e
+            }
+        }
+    }
+
+    fun createRelationshipConnectionsInBulk(connections: Collection<RelatedChangeFinder.ChangeConnections>) {
+        val connectionsPerTransaction = 1000
+
+        val startTime = System.currentTimeMillis()
+        var currentStartTime = startTime
+        val currentChunk: MutableList<RelatedChangeFinder.ChangeConnections> = ArrayList()
+
+        fun flushToDb() {
+            println("creating ${currentChunk.size} connection relationships...")
+            withDb { currentChunk.forEach { createChangeConnectionRelations(it) } }
+            println("done")
+            currentChunk.clear()
+        }
+
+        connections.forEachIndexed { i, connection ->
+            run {
+                currentChunk.add(connection)
+                if (i > connectionsPerTransaction && i % connectionsPerTransaction == 0) {
+                    flushToDb()
+                    val now = System.currentTimeMillis()
+                    val msTaken = now - currentStartTime
+                    currentStartTime = now
+                    println("added $connectionsPerTransaction in $msTaken ms")
+                }
+            }
+        }
+        flushToDb()
+    }
+
+    fun updateChangeParentConnectionsForAllNodes() {
+        val allNodes: MutableList<Long> = ArrayList()
+        val nCores = Runtime.getRuntime().availableProcessors()
+        withDb {
+            db.findNodes(COMMIT).forEach { allNodes.add(it.id) }
+        }
+        println("Updating parent connections for all nodes.")
+        val chunkSizeLimit = allNodes.size / nCores + 1
+        println("$nCores cores available, will use $nCores threads for change layer build, max $chunkSizeLimit nodes per thread")
+        val nodeChunks: MutableList<List<Long>> = ArrayList()
+
+        var currentChunk: MutableList<Long> = ArrayList()
+        var currentChunkSize = 0
+
+        fun dumpChunk() {
+            nodeChunks.add(currentChunk)
+            currentChunk = ArrayList()
+            currentChunkSize = 0
+        }
+
+        allNodes.forEach { node ->
+            currentChunk.add(node)
+            currentChunkSize++
+            if (currentChunkSize >= chunkSizeLimit) dumpChunk()
+        }
+        dumpChunk()
+        val totalChangesInChunks = nodeChunks.map { it.size }.sum()
+        println("$totalChangesInChunks nodes in chunks from ${allNodes.size} total")
+
+        val executorService = Executors.newFixedThreadPool(nodeChunks.size)
+
+        val jobs: MutableList<Callable<List<RelatedChangeFinder.ChangeConnections>>> = ArrayList()
+        val relatedChangeFinder = RelatedChangeFinder(db)
+        nodeChunks.forEachIndexed { index, chunk ->
+            val job = getParentConnectionsSearchJob(chunk, index, relatedChangeFinder)
+            jobs.add(job)
+        }
+        val results = executorService.invokeAll(jobs).map { it.get() }
+
+        println("Found parents for all nodes, creating relationships")
+
+        createRelationshipConnectionsInBulk(results.flatten())
+
+        println("Done creating relationships!")
+
     }
 
 

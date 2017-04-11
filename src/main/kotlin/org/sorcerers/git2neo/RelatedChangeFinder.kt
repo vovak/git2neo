@@ -7,9 +7,10 @@ import org.neo4j.graphdb.traversal.Evaluation
 import org.neo4j.graphdb.traversal.Evaluators
 import org.neo4j.graphdb.traversal.Uniqueness
 import java.util.*
+import kotlin.collections.HashSet
 
 class RelatedChangeFinder(val db: GraphDatabaseService) {
-    data class ChangeConnections(val parentsPerChange: Map<Node, Collection<Node>>)
+    data class ChangeConnections(val parentsPerChange: Map<Long, Collection<Long>>)
 
     val intern: StringIntern = StringIntern()
 
@@ -46,7 +47,7 @@ class RelatedChangeFinder(val db: GraphDatabaseService) {
         return result
     }
 
-    fun getParents(commitNode: Node): Map<Node, List<Node>> {
+    fun getParents(commitNode: Node): Map<Long, Collection<Long>> {
         val paths: MutableSet<String> = HashSet()
         val nodesPerPath: MutableMap<String, MutableCollection<Node>> = HashMap()
 
@@ -85,7 +86,7 @@ class RelatedChangeFinder(val db: GraphDatabaseService) {
                 }
                 .traverse(commitNode).nodes()
 
-        val parentNodesPerNode: MutableMap<Node, MutableList<Node>> = HashMap()
+        val parentNodesPerNode: MutableMap<Long, MutableSet<Long>> = HashMap()
 
         parentNodesWithOneOfPaths.forEach {
             val changeNodes = it.getChanges()
@@ -96,8 +97,8 @@ class RelatedChangeFinder(val db: GraphDatabaseService) {
                 val path = it.key
                 it.value.forEach { node ->
                     if (foundPerPath.containsKey(path)) {
-                        if (!parentNodesPerNode.containsKey(node)) parentNodesPerNode[node] = ArrayList()
-                        parentNodesPerNode[node]!!.add(foundPerPath[path]!!)
+                        if (!parentNodesPerNode.containsKey(node.id)) parentNodesPerNode[node.id] = HashSet()
+                        parentNodesPerNode[node.id]!!.add(foundPerPath[path]!!.id)
                     }
                 }
             }
@@ -108,7 +109,7 @@ class RelatedChangeFinder(val db: GraphDatabaseService) {
     }
 
     fun getChangeConnections(commitNode: Node): ChangeConnections {
-        val parentsPerNode: Map<Node, List<Node>> = getParents(commitNode)
+        val parentsPerNode: Map<Long, Collection<Long>> = getParents(commitNode)
 
         return ChangeConnections(parentsPerNode)
     }
