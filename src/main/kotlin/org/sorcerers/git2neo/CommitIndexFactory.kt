@@ -9,7 +9,7 @@ import java.io.File
  * @since 22/11/16
  */
 class CommitIndexFactory {
-    fun loadOrCreateCommitIndex(dir: File): CommitIndex {
+    fun loadOrCreateCommitIndex(dir: File, logPrefix: String): CommitIndex {
         val db = GraphDatabaseFactory().newEmbeddedDatabaseBuilder(dir)
                 .setConfig(GraphDatabaseSettings.keep_logical_logs, "false")
                 .newGraphDatabase()
@@ -17,6 +17,6 @@ class CommitIndexFactory {
             println("shutting down db")
             db.shutdown()
         }))
-        return CommitIndex(db)
+        return CommitIndex(db, logPrefix)
     }
 }
