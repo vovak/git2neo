@@ -291,6 +291,17 @@ open class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
         updateChangeParentConnectionsForAllNodes()
     }
 
+    fun Node.toFileRevision(commitInfo: CommitInfo): FileRevision {
+        val hasOldPath = this.hasProperty("oldPath")
+        return FileRevision(
+                FileRevisionId(this.getProperty("id") as String),
+                this.getProperty("path") as String,
+                if (hasOldPath) this.getProperty("oldPath") as String else null,
+                commitInfo,
+                Action.valueOf(this.getProperty("action") as String)
+        )
+    }
+
     fun Node.toFileRevision(): FileRevision {
         val hasOldPath = this.hasProperty("oldPath")
         return FileRevision(
@@ -305,9 +316,10 @@ open class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
     fun Node.toCommit(): Commit {
         val changeNodes = this.relationships.filter { it.isType(CONTAINS) }.map { it.endNode }
 
+        val commitInfo: CommitInfo = SerializationUtils.deserialize(this.getProperty("info") as ByteArray)
         return Commit(
-                SerializationUtils.deserialize(this.getProperty("info") as ByteArray),
-                changeNodes.map { it.toFileRevision() }
+                commitInfo,
+                changeNodes.map { it.toFileRevision(commitInfo) }
         )
     }
 
@@ -346,10 +358,11 @@ open class CommitIndex(val db: GraphDatabaseService) : CommitStorage {
         val result: MutableList<History<FileRevision>> = ArrayList()
         withDb {
             val headCommitNode = db.findNode(COMMIT, "id", head.stringId())
+            val commitInfo: CommitInfo = SerializationUtils.deserialize(headCommitNode.getProperty("info") as ByteArray)
             val changeNodes = headCommitNode.getChanges()
             changeNodes.forEach {
                 val traversal = db.traversalDescription().depthFirst().relationships(PARENT, Direction.OUTGOING).uniqueness(Uniqueness.NODE_GLOBAL)
-                val history = History(traversal.traverse(it).nodes().map { it.toFileRevision() })
+                val history = History(traversal.traverse(it).nodes().map { it.toFileRevision(commitInfo) })
                 result.add(history)
             }
         }
