@@ -1,10 +1,12 @@
 package org.sorcerers.git2neo
 
+import java.util.concurrent.ConcurrentHashMap
+
 /**
  * Created by vovak on 3/27/17.
  */
 class FixedSizeCache<K,V>(val sizeLimit: Int) {
-    private val map: MutableMap<K, V> = HashMap()
+    private val map: MutableMap<K, V> = ConcurrentHashMap()
 
     fun containsKey(key: K) = map.containsKey(key)
 

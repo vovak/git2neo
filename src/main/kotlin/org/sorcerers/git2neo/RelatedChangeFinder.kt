@@ -14,7 +14,7 @@ class RelatedChangeFinder(val db: GraphDatabaseService) {
 
     val intern: StringIntern = StringIntern()
 
-    val pathNodesCache: FixedSizeCache<String, Collection<Long>> = FixedSizeCache(50000)
+    val pathNodesCache: FixedSizeCache<String, Collection<Long>> = FixedSizeCache(100000)
 
     fun findCommitById(id: String): Node {
         return db.findNode(COMMIT, "id", id)
