@@ -53,7 +53,7 @@ class RelatedChangeFinder(val db: GraphDatabaseService) {
 
         fun recordParentPathForNode(parentPath: String?, changeNode: Node) {
             if (parentPath == null) return
-            paths.add(intern.intern(parentPath))
+            paths.add(parentPath)
             if (parentPath !in nodesPerPath) nodesPerPath[parentPath] = ArrayList()
             nodesPerPath[parentPath]!!.add(changeNode)
         }
