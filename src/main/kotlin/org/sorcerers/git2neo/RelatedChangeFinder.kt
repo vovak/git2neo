@@ -12,7 +12,7 @@ import kotlin.collections.HashSet
 class RelatedChangeFinder(val db: GraphDatabaseService) {
     data class ChangeConnections(val parentsPerChange: Map<Long, Collection<Long>>)
 
-    val intern: StringIntern = StringIntern()
+    val intern: StringIntern = StringIntern(concurrent = true)
 
     val pathNodesCache: FixedSizeCache<String, Collection<Long>> = FixedSizeCache(100000)
 
@@ -53,7 +53,7 @@ class RelatedChangeFinder(val db: GraphDatabaseService) {
 
         fun recordParentPathForNode(parentPath: String?, changeNode: Node) {
             if (parentPath == null) return
-            paths.add(parentPath)
+            paths.add(intern.intern(parentPath))
             if (parentPath !in nodesPerPath) nodesPerPath[parentPath] = ArrayList()
             nodesPerPath[parentPath]!!.add(changeNode)
         }
