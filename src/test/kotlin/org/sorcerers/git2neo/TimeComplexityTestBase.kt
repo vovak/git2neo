@@ -100,32 +100,32 @@ open class TimeComplexityTestBase : CommitIndexTestBase() {
         }
     }
 
-    @Test
+//    @Test
     fun testLinearMethodLooksLinear1() {
         Assert.assertTrue(isLinearPerformance({ waitLinear(it) }, Pair(100, 1000), 10))
     }
 
-    @Test
+//    @Test
     fun testLinearMethodLooksLinear2() {
         Assert.assertTrue(isLinearPerformance({ printLinear(it) }, Pair(100, 10000), 10))
     }
 
-    @Test
+//    @Test
     fun testLinearMethodLooksLinear3() {
         Assert.assertTrue(isLinearPerformance({ waitLinearPlusConstant(it) }, Pair(1, 10), 10))
     }
 
-    @Test
+//    @Test
     fun testSlowerMethodLooksNonLinear1() {
         Assert.assertFalse(isLinearPerformance({ waitQuadratic(it) }, Pair(10, 100), 5))
     }
 
-    @Test
+//    @Test
     fun testSlowerMethodLooksNonLinear2() {
         Assert.assertFalse(isLinearPerformance({ printQuadratic(it) }, Pair(10, 1000), 5))
     }
 
-    @Test
+//    @Test
     fun testSlowerMethodLooksNonLinear3() {
         Assert.assertFalse(isLinearPerformance({ waitQuadraticPlusConstant(it) }, Pair(10, 100), 5))
     }

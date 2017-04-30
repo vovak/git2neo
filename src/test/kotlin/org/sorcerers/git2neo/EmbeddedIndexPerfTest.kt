@@ -1,7 +1,6 @@
 package org.sorcerers.git2neo
 
 import org.junit.Assert
-import org.junit.Test
 import java.io.File
 import java.util.*
 
@@ -34,7 +33,7 @@ class EmbeddedIndexPerfTest: TimeComplexityTestBase() {
         removeTestDb()
     }
 
-    @Test
+//    @Test
     fun testUnconnectedNodesAddInLinearTime() {
         Assert.assertTrue(isLinearPerformance({createDbAndAddUnconnectedNodes(it) }, Pair(1000,100000), 15))
     }
