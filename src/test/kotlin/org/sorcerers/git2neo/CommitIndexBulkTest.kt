@@ -2,6 +2,7 @@ package org.sorcerers.git2neo
 
 import org.junit.Assert
 import org.junit.Test
+import org.sorcerers.git2neo.model.*
 import java.util.*
 
 /**

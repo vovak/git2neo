@@ -1,4 +1,4 @@
-package org.sorcerers.git2neo
+package org.sorcerers.git2neo.model
 
 import java.io.Serializable
 
@@ -26,9 +26,9 @@ data class FileRevisionId(val id: String) : Id<FileRevision> {
 data class Contributor(val email: String) : Serializable
 
 data class CommitInfo(
-        val id:            CommitId,
-        val author:        Contributor,
-        val committer:     Contributor,
+        val id: CommitId,
+        val author: Contributor,
+        val committer: Contributor,
         val authorTime:    Long,
         val committerTime: Long,
         val parents:       Collection<CommitId>

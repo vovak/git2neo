@@ -1,4 +1,4 @@
-package org.sorcerers.git2neo
+package org.sorcerers.git2neo.util
 
 import java.util.concurrent.ConcurrentHashMap
 

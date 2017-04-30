@@ -1,4 +1,4 @@
-package org.sorcerers.git2neo
+package org.sorcerers.git2neo.driver
 
 import org.neo4j.graphdb.Direction
 import org.neo4j.graphdb.GraphDatabaseService
@@ -6,6 +6,8 @@ import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.traversal.Evaluation
 import org.neo4j.graphdb.traversal.Evaluators
 import org.neo4j.graphdb.traversal.Uniqueness
+import org.sorcerers.git2neo.util.FixedSizeCache
+import org.sorcerers.git2neo.util.StringIntern
 import java.util.*
 import kotlin.collections.HashSet
 

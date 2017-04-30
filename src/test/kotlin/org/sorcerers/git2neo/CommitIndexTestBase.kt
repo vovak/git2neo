@@ -2,6 +2,8 @@ package org.sorcerers.git2neo
 
 import org.junit.Before
 import org.neo4j.test.TestGraphDatabaseFactory
+import org.sorcerers.git2neo.driver.CommitIndex
+import org.sorcerers.git2neo.model.*
 import java.io.File
 
 /**

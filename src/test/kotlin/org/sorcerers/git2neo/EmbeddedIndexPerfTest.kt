@@ -1,6 +1,9 @@
 package org.sorcerers.git2neo
 
 import org.junit.Assert
+import org.sorcerers.git2neo.driver.CommitIndex
+import org.sorcerers.git2neo.driver.CommitIndexFactory
+import org.sorcerers.git2neo.model.Commit
 import java.io.File
 import java.util.*
 

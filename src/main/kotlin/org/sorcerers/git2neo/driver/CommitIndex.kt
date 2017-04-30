@@ -1,8 +1,10 @@
-package org.sorcerers.git2neo
+package org.sorcerers.git2neo.driver
 
 import org.apache.commons.lang3.SerializationUtils
 import org.neo4j.graphdb.*
 import org.neo4j.graphdb.traversal.Uniqueness
+import org.sorcerers.git2neo.model.*
+import org.sorcerers.git2neo.util.use
 import java.util.*
 import java.util.concurrent.Callable
 import java.util.concurrent.Executors
@@ -48,7 +50,7 @@ fun Node.getCommitId(): String {
 }
 
 
-open class CommitIndex(val db: GraphDatabaseService, val logPrefix: String) : CommitStorage {
+class CommitIndex(val db: GraphDatabaseService, val logPrefix: String) : CommitStorage {
     fun withDb(block: () -> Unit) {
         db.beginTx().use({ tx: Transaction ->
             block.invoke()
