@@ -19,7 +19,7 @@ fun createEmbeddedIndex(): CommitIndex {
     val dir = File(TEST_DB_PATH)
     dir.mkdirs()
     dir.deleteOnExit()
-    return CommitIndexFactory().loadOrCreateCommitIndex(dir)
+    return CommitIndexFactory().loadOrCreateCommitIndex(dir, "EmbeddedIndexTest")
 }
 
 class EmbeddedIndexPerfTest: TimeComplexityTestBase() {

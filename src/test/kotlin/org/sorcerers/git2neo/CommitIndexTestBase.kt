@@ -15,7 +15,7 @@ abstract class CommitIndexTestBase {
     fun initIndex() {
         val path = "./testdb"
         val db = TestGraphDatabaseFactory().newImpermanentDatabase(File(path))
-        myIndex = CommitIndex(db)
+        myIndex = CommitIndex(db, javaClass.canonicalName)
     }
 
     fun getIndex(): CommitIndex {
