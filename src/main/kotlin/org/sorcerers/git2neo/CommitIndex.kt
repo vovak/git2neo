@@ -110,11 +110,6 @@ open class CommitIndex(val db: GraphDatabaseService, val logPrefix: String) : Co
         }
     }
 
-    fun updateChangesForNewRevision(commitNode: Node) {
-        assert(commitNode.hasLabel(COMMIT))
-//        getChangeParentsConnections(commitNode)
-    }
-
     fun doAdd(commit: Commit) {
         val nodeId = commit.info.id
         val node = findOrCreateCommitNode(nodeId)
