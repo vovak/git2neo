@@ -324,10 +324,14 @@ class CommitIndex(val db: GraphDatabaseService, val logPrefix: String) : CommitS
     override fun get(id: CommitId): Commit? {
         var result: Commit? = null
         withDb {
-            val node = db.findNode(COMMIT, "id", id.idString)
+            val node = getRawNode(id)
             if (node != null) result = node.toCommit()
         }
         return result
+    }
+
+    fun getRawNode(id: CommitId): Node? {
+        return db.findNode(COMMIT, "id", id.idString)
     }
 
     fun getCommitHistory(head: Id<Commit>, filter: (Commit) -> Boolean): History<Commit> {
