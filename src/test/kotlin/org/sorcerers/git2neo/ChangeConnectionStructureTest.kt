@@ -27,7 +27,25 @@ class ChangeConnectionStructureTest : CommitIndexTestBase() {
     }
 
     @Test
-    fun testParentConnectionCounts() {
+    fun testParentConnectionCounts1() {
+        val index = getIndex()
+        val commits: MutableList<Commit> = ArrayList()
+
+        commits.add(createCommit("1", null, listOf(Triple(Action.CREATED, "a", null))))
+        commits.add(createCommit("2", "1", listOf(Triple(Action.MODIFIED, "a", null))))
+        commits.add(createCommit("3", "2", listOf(Triple(Action.MODIFIED, "a", null))))
+
+        index.addAll(commits)
+
+        val parentVersions = findFileChangeNodeParentConnections(index, "3", "a")
+
+        Assert.assertEquals("Change node should be connected to one nearest parent in linear case",
+                1,
+                parentVersions.size)
+    }
+
+    @Test
+    fun testParentConnectionCounts2() {
         val index = getIndex()
         val commits: MutableList<Commit> = ArrayList()
 
