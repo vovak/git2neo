@@ -1,9 +1,11 @@
 package org.sorcerers.git2neo.loader
 
+import org.eclipse.jgit.lib.Constants
 import org.eclipse.jgit.lib.PersonIdent
 import org.eclipse.jgit.revwalk.RevCommit
 import org.eclipse.jgit.revwalk.RevWalk
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder
+import org.sorcerers.git2neo.driver.CommitIndex
 import org.sorcerers.git2neo.model.Commit
 import org.sorcerers.git2neo.model.CommitId
 import org.sorcerers.git2neo.model.CommitInfo
@@ -14,7 +16,7 @@ import java.io.File
 /**
  * Created by vovak on 5/1/17.
  */
-class GitLoader {
+class GitLoader(val commitIndex: CommitIndex) {
     fun loadGitRepo(path: String) {
         val repoDir = File(path)
         val repoBuilder = FileRepositoryBuilder()
@@ -22,23 +24,28 @@ class GitLoader {
                 .setGitDir(repoDir)
                 .readEnvironment()
                 .findGitDir()
+                .setMustExist(true)
                 .build()
+
+        val headId = repo.resolve(Constants.HEAD)
+
         repo.use {
-            val head = repo.getRef("refs/head/master")
             val walk = RevWalk(repo)
             walk.use {
-                val headCommit = walk.parseCommit(head.objectId)
+                val headCommit = walk.parseCommit(headId)
                 walk.markStart(headCommit)
                 walk.forEach {
+//                    println("Git2Neo Loader: processing commit ${it.id.abbreviate(8).name()} :: ${it.fullMessage} ")
                     loadCommit(it)
                 }
             }
         }
+        commitIndex.updateChangeParentConnectionsForAllNodes()
     }
 
     fun loadCommit(commit: RevCommit) {
         val git2NeoCommit = commit.toGit2NeoCommit()
-        //todo prepare db and add commit
+        commitIndex.add(git2NeoCommit, updateParents = true)
     }
 
     fun PersonIdent.toContributor(): Contributor {
@@ -60,7 +67,7 @@ class GitLoader {
 
 
     fun RevCommit.toGit2NeoCommit(): Commit {
-        //todo also prepare changes
+//        val changes = this.
         return Commit(this.getCommitInfo(), emptyList())
     }
 }
