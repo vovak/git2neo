@@ -20,6 +20,9 @@ val CHANGE: Label = Label { "change" }
 val PARENT: RelationshipType = RelationshipType { "PARENT" }
 val CONTAINS: RelationshipType = RelationshipType { "CONTAINS" }
 
+// do not split processing into multiple jobs if there are too little changes
+val SINGLE_THREAD_CHANGES = 100
+
 //TODO check node type (it should not be possible to call *ChangeNode*.getChanges())
 
 fun Node.getChanges(): List<Node> {
@@ -202,11 +205,14 @@ class CommitIndex(val db: GraphDatabaseService, val logPrefix: String) : CommitS
 
     fun updateChangeParentConnectionsForAllNodes() {
         val allNodes: MutableList<Long> = ArrayList()
-        val nCores = Runtime.getRuntime().availableProcessors()
-        val nThreads = nCores / 2
+
         withDb {
             db.findNodes(COMMIT).forEach { allNodes.add(it.id) }
         }
+
+        val nCores = Runtime.getRuntime().availableProcessors()
+        val nThreads = if (allNodes.size <= SINGLE_THREAD_CHANGES) 1 else nCores / 2
+
         println("$logPrefix Updating parent connections for all nodes.")
         val chunkSizeLimit = allNodes.size / (nThreads * 5) + 1
         println("$logPrefix $nCores cores available, will use $nThreads threads for change layer build, max $chunkSizeLimit nodes per thread")
@@ -248,12 +254,15 @@ class CommitIndex(val db: GraphDatabaseService, val logPrefix: String) : CommitS
 
     }
 
-
     override fun add(commit: Commit) {
+        add(commit, true)
+    }
+
+    fun add(commit: Commit, updateParents: Boolean) {
         withDb {
             doAdd(commit)
         }
-        updateChangeParentConnectionsForAllNodes()
+        if (updateParents) updateChangeParentConnectionsForAllNodes()
     }
 
     override fun addAll(commits: Collection<Commit>) {
