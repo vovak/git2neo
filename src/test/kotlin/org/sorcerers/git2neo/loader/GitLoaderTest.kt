@@ -34,6 +34,8 @@ class GitLoaderTest {
         loader.loadGitRepo(repo.absolutePath)
 
         val history = myIndex.getChangesHistoriesForCommit(CommitId("1cb7a8f941790cbe4b56bae135cda108962b28dd"))
+        println(history)
         Assert.assertTrue(history.isNotEmpty())
+        Assert.assertEquals(20, history[0].items.size)
     }
 }
