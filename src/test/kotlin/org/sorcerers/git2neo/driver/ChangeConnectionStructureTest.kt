@@ -1,11 +1,8 @@
-package org.sorcerers.git2neo
+package org.sorcerers.git2neo.driver
 
 import org.junit.Assert
 import org.junit.Test
 import org.neo4j.graphdb.Direction
-import org.sorcerers.git2neo.driver.CONTAINS
-import org.sorcerers.git2neo.driver.CommitIndex
-import org.sorcerers.git2neo.driver.PARENT
 import org.sorcerers.git2neo.model.Action
 import org.sorcerers.git2neo.model.Commit
 import org.sorcerers.git2neo.model.CommitId

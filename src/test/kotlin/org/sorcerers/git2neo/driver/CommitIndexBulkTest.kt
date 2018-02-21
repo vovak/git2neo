@@ -1,4 +1,4 @@
-package org.sorcerers.git2neo
+package org.sorcerers.git2neo.driver
 
 import org.junit.Assert
 import org.junit.Test
