@@ -37,7 +37,7 @@ class GitLoader(val commitIndex: CommitIndex) {
                 val headCommit = revWalk.parseCommit(headId)
                 revWalk.markStart(headCommit)
                 revWalk.forEach {
-                    //                    println("Git2Neo Loader: processing commit ${it.id.abbreviate(8).name()} :: ${it.fullMessage} ")
+                               println("Git2Neo Loader: processing commit ${it.id.abbreviate(8).name()} :: ${it.fullMessage} ")
                     loadCommit(it, repo, revWalk)
                 }
             }
@@ -47,7 +47,7 @@ class GitLoader(val commitIndex: CommitIndex) {
 
     fun loadCommit(commit: RevCommit, repository: Repository, revWalk: RevWalk) {
         val git2NeoCommit = commit.toGit2NeoCommit(repository, revWalk)
-        commitIndex.add(git2NeoCommit, updateParents = true)
+        commitIndex.add(git2NeoCommit, updateParents = false)
     }
 
     fun PersonIdent.toContributor(): Contributor {
@@ -101,13 +101,15 @@ class GitLoader(val commitIndex: CommitIndex) {
 
         fun getMergeDiff(): List<DiffEntry> {
             val autoMergedTree = AutoMerger
-                    .automerge(repository, revWalk, this, ThreeWayMergeStrategy.RECURSIVE, false)
+                    .automerge(repository, revWalk, this, ThreeWayMergeStrategy.RECURSIVE, true)
             val treeWalk = TreeWalk(repository)
 
             treeWalk.addTree(autoMergedTree)
             treeWalk.addTree(this.tree)
 
-            return DiffEntry.scan(treeWalk)
+            //if a file is similar to one of parents, it is NOT changed in the merge commit! Entries will be empty then.
+            val entries = DiffEntry.scan(treeWalk)
+            return entries
         }
 
         var diffEntries: List<DiffEntry> = emptyList()
