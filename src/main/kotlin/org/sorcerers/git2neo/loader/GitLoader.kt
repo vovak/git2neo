@@ -4,6 +4,7 @@ import org.eclipse.jgit.diff.DiffEntry
 import org.eclipse.jgit.lib.Constants
 import org.eclipse.jgit.lib.PersonIdent
 import org.eclipse.jgit.lib.Repository
+import org.eclipse.jgit.merge.ThreeWayMergeStrategy
 import org.eclipse.jgit.revwalk.RevCommit
 import org.eclipse.jgit.revwalk.RevWalk
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder
@@ -31,21 +32,21 @@ class GitLoader(val commitIndex: CommitIndex) {
         val headId = repo.resolve(Constants.HEAD)
 
         repo.use {
-            val walk = RevWalk(repo)
-            walk.use {
-                val headCommit = walk.parseCommit(headId)
-                walk.markStart(headCommit)
-                walk.forEach {
+            val revWalk = RevWalk(repo)
+            revWalk.use {
+                val headCommit = revWalk.parseCommit(headId)
+                revWalk.markStart(headCommit)
+                revWalk.forEach {
                     //                    println("Git2Neo Loader: processing commit ${it.id.abbreviate(8).name()} :: ${it.fullMessage} ")
-                    loadCommit(it, repo)
+                    loadCommit(it, repo, revWalk)
                 }
             }
         }
         commitIndex.updateChangeParentConnectionsForAllNodes()
     }
 
-    fun loadCommit(commit: RevCommit, repository: Repository) {
-        val git2NeoCommit = commit.toGit2NeoCommit(repository)
+    fun loadCommit(commit: RevCommit, repository: Repository, revWalk: RevWalk) {
+        val git2NeoCommit = commit.toGit2NeoCommit(repository, revWalk)
         commitIndex.add(git2NeoCommit, updateParents = true)
     }
 
@@ -78,14 +79,14 @@ class GitLoader(val commitIndex: CommitIndex) {
     }
 
 
+    fun RevCommit.getChanges(commit: CommitInfo, repository: Repository, revWalk: RevWalk): List<FileRevision> {
 
-    fun RevCommit.getChanges(commit: CommitInfo, repository: Repository): List<FileRevision> {
-        val treeWalk = TreeWalk(repository)
 
         val parents = this.parents
         println(parents.count())
 
         fun getChangesForSimpleCommit(): List<DiffEntry> {
+            val treeWalk = TreeWalk(repository)
             var from: RevCommit? = null
             if (parents.isEmpty()) {
                 treeWalk.addTree(EmptyTreeIterator())
@@ -99,7 +100,14 @@ class GitLoader(val commitIndex: CommitIndex) {
         }
 
         fun getMergeDiff(): List<DiffEntry> {
-            return emptyList()
+            val autoMergedTree = AutoMerger
+                    .automerge(repository, revWalk, this, ThreeWayMergeStrategy.RECURSIVE, false)
+            val treeWalk = TreeWalk(repository)
+
+            treeWalk.addTree(autoMergedTree)
+            treeWalk.addTree(this.tree)
+
+            return DiffEntry.scan(treeWalk)
         }
 
         var diffEntries: List<DiffEntry> = emptyList()
@@ -113,8 +121,8 @@ class GitLoader(val commitIndex: CommitIndex) {
     }
 
 
-    fun RevCommit.toGit2NeoCommit(repository: Repository): Commit {
+    fun RevCommit.toGit2NeoCommit(repository: Repository, revWalk: RevWalk): Commit {
         val commitInfo = this.getCommitInfo()
-        return Commit(commitInfo, this.getChanges(commitInfo, repository))
+        return Commit(commitInfo, this.getChanges(commitInfo, repository, revWalk))
     }
 }
