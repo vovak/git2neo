@@ -1,10 +1,13 @@
 package org.sorcerers.git2neo.loader
 
 import org.eclipse.jgit.diff.DiffEntry
-import org.eclipse.jgit.lib.*
+import org.eclipse.jgit.lib.Constants
+import org.eclipse.jgit.lib.PersonIdent
+import org.eclipse.jgit.lib.Repository
 import org.eclipse.jgit.revwalk.RevCommit
 import org.eclipse.jgit.revwalk.RevWalk
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder
+import org.eclipse.jgit.treewalk.EmptyTreeIterator
 import org.eclipse.jgit.treewalk.TreeWalk
 import org.sorcerers.git2neo.driver.CommitIndex
 import org.sorcerers.git2neo.model.*
@@ -63,38 +66,36 @@ class GitLoader(val commitIndex: CommitIndex) {
                 parentIds)
     }
 
+    fun DiffEntry.ChangeType.toGit2NeoAction(): Action {
+        if (this == DiffEntry.ChangeType.ADD) return Action.CREATED
+        if (this == DiffEntry.ChangeType.DELETE) return Action.DELETED
+        if (this == DiffEntry.ChangeType.MODIFY) return Action.MODIFIED
+        return Action.MOVED
+    }
+
     fun DiffEntry.toFileRevision(commit: CommitInfo): FileRevision {
-        //TODO meaningful IDs and actions
-        return FileRevision(FileRevisionId("id"), this.oldPath, null, commit, Action.MODIFIED)
+        return FileRevision(FileRevisionId("id"), this.newPath, null, commit, this.changeType.toGit2NeoAction())
     }
 
     fun RevCommit.getChanges(commit: CommitInfo, repository: Repository): List<FileRevision> {
-        fun emptyTree(): ObjectId {
-            var oi: ObjectInserter? = null
-            try {
-                oi = repository.newObjectInserter()
-                return oi!!.insert(Constants.OBJ_TREE, byteArrayOf())
-            } finally {
-                if (oi != null) {
-                    oi.flush()
-                }
-            }
-        }
-
         val treeWalk = TreeWalk(repository)
-        treeWalk.addTree(this.tree)
-        val parents = this.parents
 
-        val revWalk = RevWalk(repository)
+        val parents = this.parents
+        println(parents.count())
+
         var from: RevCommit? = null
         if (parents.isEmpty()) {
             //TODO handle initial commit
-            treeWalk.addTree(emptyTree())
+            treeWalk.addTree(EmptyTreeIterator())
         } else {
             //TODO multiple parents (figure out treewalk structure)
             from = parents[0]
+            treeWalk.addTree(from.tree)
         }
-        if (from != null) treeWalk.addTree(from.tree)
+
+        treeWalk.addTree(this.tree)
+
+
 
         val diffEntries = DiffEntry.scan(treeWalk)
 
