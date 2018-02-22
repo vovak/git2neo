@@ -1,9 +1,8 @@
 package org.sorcerers.git2neo.loader.util
 
-import java.io.BufferedInputStream
-import java.io.BufferedOutputStream
-import java.io.File
-import java.io.FileOutputStream
+import java.io.*
+import java.nio.file.*
+import java.nio.file.attribute.BasicFileAttributes
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 
@@ -71,7 +70,24 @@ private fun extractFolder(zipFile: String, extractFolder: String) {
 }
 
 fun isGitRepo(path: String): Boolean {
-    var gitDataFolder = File(path+File.separator+".git")
+    val gitDataFolder = File(path+File.separator+".git")
     println("Checking if ${gitDataFolder.absolutePath} is a git folder...")
     return gitDataFolder.exists()
+}
+
+fun cleanUnpackedRepos() {
+    val dir = Paths.get(getRepoUnpackedPath())
+    Files.walkFileTree(dir, object : SimpleFileVisitor<Path>() {
+        @Throws(IOException::class)
+        override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
+            Files.delete(file)
+            return FileVisitResult.CONTINUE
+        }
+
+        @Throws(IOException::class)
+        override fun postVisitDirectory(dir: Path, exc: IOException?): FileVisitResult {
+            Files.delete(dir)
+            return FileVisitResult.CONTINUE
+        }
+    })
 }

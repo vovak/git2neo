@@ -1,12 +1,15 @@
 package org.sorcerers.git2neo.loader
 
+import org.junit.After
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.sorcerers.git2neo.driver.CommitIndex
+import org.sorcerers.git2neo.loader.util.cleanUnpackedRepos
 import org.sorcerers.git2neo.loader.util.isGitRepo
 import org.sorcerers.git2neo.loader.util.unzipRepo
+import org.sorcerers.git2neo.model.Action
 import org.sorcerers.git2neo.model.CommitId
 import java.io.File
 
@@ -20,6 +23,17 @@ class GitLoaderTest {
         myIndex = CommitIndex(db, javaClass.canonicalName)
     }
 
+    @After
+    fun clean() {
+        cleanUnpackedRepos()
+    }
+
+    private fun loadRepo(name: String) {
+        val repo = unzipRepo(name)
+        val loader = GitLoader(myIndex)
+        loader.loadGitRepo(repo.absolutePath)
+    }
+
 
     @Test
     fun testUnzip() {
@@ -29,13 +43,23 @@ class GitLoaderTest {
 
     @Test
     fun testIma() {
-        val repo = unzipRepo("ima")
-        val loader = GitLoader(myIndex)
-        loader.loadGitRepo(repo.absolutePath)
+        loadRepo("ima")
 
         val history = myIndex.getChangesHistoriesForCommit(CommitId("1cb7a8f941790cbe4b56bae135cda108962b28dd"))
         println(history)
         Assert.assertTrue(history.isNotEmpty())
         Assert.assertEquals(20, history[0].items.size)
+        Assert.assertTrue(history[0].items.any { it.action == Action.CREATED })
+    }
+
+    @Test
+    fun testLinearHistory() {
+        loadRepo("repo1")
+
+        val history = myIndex.getChangesHistoriesForCommit(CommitId("d8d4a6fa7cde15cd974e0d765b2a54619f8993a9"))
+        println(history)
+        Assert.assertTrue(history.isNotEmpty())
+        Assert.assertEquals(3, history[0].items.size)
+        Assert.assertTrue(history[0].items.any { it.action == Action.CREATED })
     }
 }
