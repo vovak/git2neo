@@ -85,7 +85,6 @@ class GitLoader(val commitIndex: CommitIndex) {
 
         var from: RevCommit? = null
         if (parents.isEmpty()) {
-            //TODO handle initial commit
             treeWalk.addTree(EmptyTreeIterator())
         } else {
             //TODO multiple parents (figure out treewalk structure)
