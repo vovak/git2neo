@@ -62,4 +62,15 @@ class GitLoaderTest {
         Assert.assertEquals(3, history[0].items.size)
         Assert.assertTrue(history[0].items.any { it.action == Action.CREATED })
     }
+
+    @Test
+    fun testHistoryWithMerge() {
+        loadRepo("repo2")
+
+        val history = myIndex.getChangesHistoriesForCommit(CommitId("13e7d745549489fb89b0fd7e63b358a03e32bcbf"))
+        println(history)
+        Assert.assertTrue(history.isNotEmpty())
+        Assert.assertEquals(5, history[0].items.size)
+        Assert.assertTrue(history[0].items.any { it.action == Action.CREATED })
+    }
 }
