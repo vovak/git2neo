@@ -77,26 +77,37 @@ class GitLoader(val commitIndex: CommitIndex) {
         return FileRevision(FileRevisionId("id"), this.newPath, null, commit, this.changeType.toGit2NeoAction())
     }
 
+
+
     fun RevCommit.getChanges(commit: CommitInfo, repository: Repository): List<FileRevision> {
         val treeWalk = TreeWalk(repository)
 
         val parents = this.parents
         println(parents.count())
 
-        var from: RevCommit? = null
-        if (parents.isEmpty()) {
-            treeWalk.addTree(EmptyTreeIterator())
-        } else {
-            //TODO multiple parents (figure out treewalk structure)
-            from = parents[0]
-            treeWalk.addTree(from.tree)
+        fun getChangesForSimpleCommit(): List<DiffEntry> {
+            var from: RevCommit? = null
+            if (parents.isEmpty()) {
+                treeWalk.addTree(EmptyTreeIterator())
+            } else {
+                from = parents[0]
+                treeWalk.addTree(from.tree)
+            }
+
+            treeWalk.addTree(this.tree)
+            return DiffEntry.scan(treeWalk)
         }
 
-        treeWalk.addTree(this.tree)
+        fun getMergeDiff(): List<DiffEntry> {
+            return emptyList()
+        }
 
-
-
-        val diffEntries = DiffEntry.scan(treeWalk)
+        var diffEntries: List<DiffEntry> = emptyList()
+        diffEntries = if (parents.count() < 2) {
+            getChangesForSimpleCommit()
+        } else {
+            getMergeDiff()
+        }
 
         return diffEntries.map { it.toFileRevision(commit) }
     }
