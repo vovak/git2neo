@@ -110,22 +110,11 @@ class GitLoaderTest {
         Assert.assertTrue(history[0].items.any { it.action == Action.CREATED })
     }
 
-
-
     @Test
     fun testLargerHistory200Commits() {
         loadRepo("changedb")
     }
 
-//    @Test
-    fun testLargerHistory5kCommits() {
-        loadRepo("webpack")
-        val history = myIndex.getChangesHistoriesForCommit(CommitId("000b34e0c2a23563de9b0e862215846deb3710e7"))
-        Assert.assertTrue(history.isNotEmpty())
-        history[0].items.forEach{println(it.commitInfo.id)}
-        Assert.assertEquals(35, history[0].items.size)
-        Assert.assertEquals(1, history[0].items.filter { it.action == Action.CREATED }.size)
-    }
 
 //    @Test
     fun testLargerHistory50kCommits() {

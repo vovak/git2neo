@@ -76,7 +76,11 @@ fun isGitRepo(path: String): Boolean {
 }
 
 fun cleanUnpackedRepos() {
-    val dir = Paths.get(getRepoUnpackedPath())
+    removeDir(getRepoUnpackedPath())
+}
+
+fun removeDir(path: String) {
+    val dir = Paths.get(path)
     Files.walkFileTree(dir, object : SimpleFileVisitor<Path>() {
         @Throws(IOException::class)
         override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
