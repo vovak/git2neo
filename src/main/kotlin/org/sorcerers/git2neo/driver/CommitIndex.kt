@@ -214,7 +214,7 @@ class CommitIndex(val db: GraphDatabaseService, val logPrefix: String) : CommitS
         val nThreads = if (allNodes.size <= SINGLE_THREAD_CHANGES) 1 else nCores / 2
 
         println("$logPrefix Updating parent connections for all nodes.")
-        val chunkSizeLimit = allNodes.size / (nThreads * 5) + 1
+        val chunkSizeLimit = if (allNodes.size <= SINGLE_THREAD_CHANGES) allNodes.size else allNodes.size / (nThreads * 5) + 1
         println("$logPrefix $nCores cores available, will use $nThreads threads for change layer build, max $chunkSizeLimit nodes per thread")
         val nodeChunks: MutableList<List<Long>> = ArrayList()
 
