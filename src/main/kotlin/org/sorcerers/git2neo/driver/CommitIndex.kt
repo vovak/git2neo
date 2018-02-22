@@ -373,7 +373,7 @@ class CommitIndex(val db: GraphDatabaseService, val logPrefix: String) : CommitS
             val changeNodes = headCommitNode.getChanges()
             changeNodes.forEach {
                 val traversal = db.traversalDescription().depthFirst().relationships(PARENT, Direction.OUTGOING).uniqueness(Uniqueness.NODE_GLOBAL)
-                val history = History(traversal.traverse(it).nodes().map { it.toFileRevision(commitInfo) })
+                val history = History(traversal.traverse(it).nodes().map { it.toFileRevision() })
                 result.add(history)
             }
         }
