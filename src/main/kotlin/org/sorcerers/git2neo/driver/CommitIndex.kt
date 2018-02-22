@@ -18,6 +18,7 @@ import java.util.concurrent.Executors
 val COMMIT: Label = Label { "commit" }
 val CHANGE: Label = Label { "change" }
 val PARENT: RelationshipType = RelationshipType { "PARENT" }
+val FIRST_PARENT: RelationshipType = RelationshipType { "FIRST_PARENT" }
 val CONTAINS: RelationshipType = RelationshipType { "CONTAINS" }
 
 // do not split processing into multiple jobs if there are too little changes
@@ -101,17 +102,20 @@ class CommitIndex(val db: GraphDatabaseService, val logPrefix: String) : CommitS
     }
 
 
-    fun getChangeParentsConnections(relatedChangeFinder: RelatedChangeFinder, commitNodeId: Long): RelatedChangeFinder.ChangeConnections {
+    fun getChangeParentsConnections(relatedChangeFinder: RelatedChangeFinder,
+                                    commitNodeId: Long,
+                                    relationshipType: RelationshipType): RelatedChangeFinder.ChangeConnections {
         val commitNode = db.getNodeById(commitNodeId)
-        val connections = relatedChangeFinder.getChangeConnections(commitNode)
+        val connections = relatedChangeFinder.getChangeConnections(commitNode, relationshipType)
         return connections
     }
 
-    fun createChangeConnectionRelations(connections: RelatedChangeFinder.ChangeConnections) {
+    fun createChangeConnectionRelations(connections: RelatedChangeFinder.ChangeConnections,
+                                        relationshipType: RelationshipType) {
         connections.parentsPerChange.forEach {
             val change = db.getNodeById(it.key)
             val parents = it.value
-            parents.forEach { change.createRelationshipTo(db.getNodeById(it), PARENT) }
+            parents.forEach { change.createRelationshipTo(db.getNodeById(it), relationshipType) }
         }
     }
 
@@ -122,13 +126,18 @@ class CommitIndex(val db: GraphDatabaseService, val logPrefix: String) : CommitS
         commit.changes.forEach { addChangeNode(node, it) }
 
         val parentIds = commit.info.parents
+        var firstProcessed = false
         parentIds.forEach {
             val parentNode = findOrCreateCommitNode(it)
             node.createRelationshipTo(parentNode, PARENT)
+            if (!firstProcessed) {
+                firstProcessed = true
+                node.createRelationshipTo(parentNode, FIRST_PARENT)
+            }
         }
     }
 
-    fun processNodes(nodeIds: List<Long>, chunkIndex: Int, relatedChangeFinder: RelatedChangeFinder): List<RelatedChangeFinder.ChangeConnections> {
+    fun processNodes(nodeIds: List<Long>, chunkIndex: Int, relatedChangeFinder: RelatedChangeFinder, relationshipType: RelationshipType): List<RelatedChangeFinder.ChangeConnections> {
         val total = nodeIds.size
         var done = 0
         val startTime = System.currentTimeMillis()
@@ -141,7 +150,7 @@ class CommitIndex(val db: GraphDatabaseService, val logPrefix: String) : CommitS
         fun processChunk() {
             withDb {
                 chunk.forEach {
-                    connections.add(getChangeParentsConnections(relatedChangeFinder, it))
+                    connections.add(getChangeParentsConnections(relatedChangeFinder, it, relationshipType))
                 }
             }
             val now = System.currentTimeMillis()
@@ -163,17 +172,18 @@ class CommitIndex(val db: GraphDatabaseService, val logPrefix: String) : CommitS
         return connections
     }
 
-    fun getParentConnectionsSearchJob(nodeIds: List<Long>, workerIndex: Int, relatedChangeFinder: RelatedChangeFinder): Callable<List<RelatedChangeFinder.ChangeConnections>> {
+    fun getParentConnectionsSearchJob(nodeIds: List<Long>, workerIndex: Int, relatedChangeFinder: RelatedChangeFinder, relationshipType: RelationshipType): Callable<List<RelatedChangeFinder.ChangeConnections>> {
         return Callable {
             try {
-                return@Callable processNodes(nodeIds, workerIndex, relatedChangeFinder)
+                return@Callable processNodes(nodeIds, workerIndex, relatedChangeFinder, relationshipType)
             } catch (e: Throwable) {
                 throw e
             }
         }
     }
 
-    fun createRelationshipConnectionsInBulk(connections: Collection<RelatedChangeFinder.ChangeConnections>) {
+    fun createRelationshipConnectionsInBulk(connections: Collection<RelatedChangeFinder.ChangeConnections>,
+                                            relationshipType: RelationshipType) {
         val connectionsPerTransaction = 200
         val total = connections.size
 
@@ -183,7 +193,7 @@ class CommitIndex(val db: GraphDatabaseService, val logPrefix: String) : CommitS
 
         fun flushToDb() {
             println("$logPrefix creating ${currentChunk.size} connection relationships...")
-            withDb { currentChunk.forEach { createChangeConnectionRelations(it) } }
+            withDb { currentChunk.forEach { createChangeConnectionRelations(it, relationshipType) } }
             println("$logPrefix done")
             currentChunk.clear()
         }
@@ -204,6 +214,11 @@ class CommitIndex(val db: GraphDatabaseService, val logPrefix: String) : CommitS
     }
 
     fun updateChangeParentConnectionsForAllNodes() {
+        updateChangeParentConnectionsForAllNodes(PARENT)
+        updateChangeParentConnectionsForAllNodes(FIRST_PARENT)
+    }
+
+    fun updateChangeParentConnectionsForAllNodes(relationshipType: RelationshipType) {
         val allNodes: MutableList<Long> = ArrayList()
 
         withDb {
@@ -241,14 +256,14 @@ class CommitIndex(val db: GraphDatabaseService, val logPrefix: String) : CommitS
         val jobs: MutableList<Callable<List<RelatedChangeFinder.ChangeConnections>>> = ArrayList()
         val relatedChangeFinder = RelatedChangeFinder(db)
         nodeChunks.forEachIndexed { index, chunk ->
-            val job = getParentConnectionsSearchJob(chunk, index, relatedChangeFinder)
+            val job = getParentConnectionsSearchJob(chunk, index, relatedChangeFinder, relationshipType)
             jobs.add(job)
         }
         val results = executorService.invokeAll(jobs).map { it.get() }
 
         println("$logPrefix Found parents for all nodes, creating relationships")
 
-        createRelationshipConnectionsInBulk(results.flatten())
+        createRelationshipConnectionsInBulk(results.flatten(), relationshipType)
 
         println("$logPrefix Done creating relationships!")
 
@@ -355,10 +370,15 @@ class CommitIndex(val db: GraphDatabaseService, val logPrefix: String) : CommitS
     }
 
     fun getChangesHistory(head: Id<FileRevision>, filter: (FileRevision) -> Boolean): History<FileRevision> {
+        return getChangesHistory(head, filter, false)
+    }
+
+    fun getChangesHistory(head: Id<FileRevision>, filter: (FileRevision) -> Boolean, firstParent: Boolean): History<FileRevision> {
         val changes: MutableList<FileRevision> = ArrayList()
+        val relationshipType = if (firstParent) FIRST_PARENT else PARENT
         withDb {
             val headNode = db.findNode(CHANGE, "id", head.stringId())
-            val traversal = db.traversalDescription().depthFirst().relationships(PARENT, Direction.OUTGOING).uniqueness(Uniqueness.NODE_GLOBAL)
+            val traversal = db.traversalDescription().depthFirst().relationships(relationshipType, Direction.OUTGOING).uniqueness(Uniqueness.NODE_GLOBAL)
             val result = traversal.traverse(headNode)
             result.nodes().forEach { changes.add(it.toFileRevision()) }
         }
@@ -366,13 +386,18 @@ class CommitIndex(val db: GraphDatabaseService, val logPrefix: String) : CommitS
     }
 
     fun getChangesHistoriesForCommit(head: Id<Commit>): List<History<FileRevision>> {
+        return getChangesHistoriesForCommit(head, false)
+    }
+
+    fun getChangesHistoriesForCommit(head: Id<Commit>, firstParent: Boolean): List<History<FileRevision>> {
         val result: MutableList<History<FileRevision>> = ArrayList()
+        val relationshipType = if (firstParent) FIRST_PARENT else PARENT
         withDb {
             val headCommitNode = db.findNode(COMMIT, "id", head.stringId())
             val commitInfo: CommitInfo = SerializationUtils.deserialize(headCommitNode.getProperty("info") as ByteArray)
             val changeNodes = headCommitNode.getChanges()
             changeNodes.forEach {
-                val traversal = db.traversalDescription().depthFirst().relationships(PARENT, Direction.OUTGOING).uniqueness(Uniqueness.NODE_GLOBAL)
+                val traversal = db.traversalDescription().depthFirst().relationships(relationshipType, Direction.OUTGOING).uniqueness(Uniqueness.NODE_GLOBAL)
                 val history = History(traversal.traverse(it).nodes().map { it.toFileRevision() })
                 result.add(history)
             }

@@ -31,7 +31,7 @@ data class CommitInfo(
         val committer: Contributor,
         val authorTime:    Long,
         val committerTime: Long,
-        val parents:       Collection<CommitId>
+        val parents: List<CommitId>
 ) : Serializable
 
 enum class Action {CREATED, MODIFIED, DELETED, MOVED}

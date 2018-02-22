@@ -47,4 +47,9 @@ class GitLoaderPersistentTest {
         Assert.assertEquals(35, history[0].items.size)
         Assert.assertEquals(1, history[0].items.filter { it.action == Action.CREATED }.size)
     }
+
+    @Test
+    fun testLargerHistory50kCommits() {
+        loadRepo("git")
+    }
 }

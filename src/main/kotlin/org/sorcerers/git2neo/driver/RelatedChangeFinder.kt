@@ -3,10 +3,10 @@ package org.sorcerers.git2neo.driver
 import org.neo4j.graphdb.Direction
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.RelationshipType
 import org.neo4j.graphdb.traversal.Evaluation
 import org.neo4j.graphdb.traversal.TraversalDescription
 import org.neo4j.graphdb.traversal.Uniqueness
-import org.sorcerers.git2neo.util.StringIntern
 import java.util.*
 import kotlin.collections.HashSet
 
@@ -22,10 +22,12 @@ class RelatedChangeFinder(val db: GraphDatabaseService) {
         return result
     }
 
-    fun getPathParentsTraversalDescription(commitNodeId: Long, candidateNodes: Collection<Long>): TraversalDescription {
+    fun getPathParentsTraversalDescription(commitNodeId: Long,
+                                           candidateNodes: Collection<Long>,
+                                           relationshipType: RelationshipType): TraversalDescription {
         return db.traversalDescription()
                 .uniqueness(Uniqueness.NODE_GLOBAL)
-                .relationships(PARENT, Direction.OUTGOING)
+                .relationships(relationshipType, Direction.OUTGOING)
                 .evaluator {
                     if (it.endNode().id == commitNodeId) return@evaluator Evaluation.EXCLUDE_AND_CONTINUE
                     if (candidateNodes.contains(it.endNode().id)) return@evaluator Evaluation.INCLUDE_AND_PRUNE
@@ -33,7 +35,7 @@ class RelatedChangeFinder(val db: GraphDatabaseService) {
                 }
     }
 
-    fun getChangeConnections(commitNode: Node): ChangeConnections {
+    fun getChangeConnections(commitNode: Node, relationshipType: RelationshipType): ChangeConnections {
         val paths: MutableSet<String> = HashSet()
 
         val changeNodes = commitNode.getChanges()
@@ -53,7 +55,7 @@ class RelatedChangeFinder(val db: GraphDatabaseService) {
             candidates.addAll(parentCandidates[path] ?: emptySet())
             if (oldPath != null) candidates.addAll(parentCandidates[oldPath] ?: emptySet())
 
-            val parentsIterator = getPathParentsTraversalDescription(commitNode.id, candidates).traverse(commitNode).nodes()
+            val parentsIterator = getPathParentsTraversalDescription(commitNode.id, candidates, relationshipType).traverse(commitNode).nodes()
             val parents: MutableList<Long> = ArrayList()
 
             //todo id memoization

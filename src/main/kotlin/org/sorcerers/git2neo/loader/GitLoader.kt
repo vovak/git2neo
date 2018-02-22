@@ -37,7 +37,7 @@ class GitLoader(val commitIndex: CommitIndex) {
                 val headCommit = revWalk.parseCommit(headId)
                 revWalk.markStart(headCommit)
                 revWalk.forEach {
-                               println("Git2Neo Loader: processing commit ${it.id.abbreviate(8).name()} :: ${it.fullMessage} ")
+                    println("Git2Neo Loader: processing commit ${it.id.abbreviate(8).name()} :: ${it.fullMessage} ")
                     loadCommit(it, repo, revWalk)
                 }
             }
@@ -100,16 +100,21 @@ class GitLoader(val commitIndex: CommitIndex) {
         }
 
         fun getMergeDiff(): List<DiffEntry> {
-            val autoMergedTree = AutoMerger
-                    .automerge(repository, revWalk, this, ThreeWayMergeStrategy.RECURSIVE, true)
-            val treeWalk = TreeWalk(repository)
+            return try {
+                val autoMergedTree = AutoMerger
+                        .automerge(repository, revWalk, this, ThreeWayMergeStrategy.RECURSIVE, false)
+                val treeWalk = TreeWalk(repository)
 
-            treeWalk.addTree(autoMergedTree)
-            treeWalk.addTree(this.tree)
+                treeWalk.addTree(autoMergedTree)
+                treeWalk.addTree(this.tree)
 
-            //if a file is similar to one of parents, it is NOT changed in the merge commit! Entries will be empty then.
-            val entries = DiffEntry.scan(treeWalk)
-            return entries
+                //if a file is similar to one of parents, it is NOT changed in the merge commit! Entries will be empty then.
+                val entries = DiffEntry.scan(treeWalk)
+                entries
+            } catch (e: Exception) {
+                println(e.message)
+                emptyList()
+            }
         }
 
         var diffEntries: List<DiffEntry> = emptyList()
@@ -120,6 +125,7 @@ class GitLoader(val commitIndex: CommitIndex) {
         }
 
         return diffEntries.map { it.toFileRevision(commit) }
+
     }
 
 
