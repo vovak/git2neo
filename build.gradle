@@ -30,6 +30,8 @@ dependencies {
     compile group: 'org.eclipse.jgit', name: 'org.eclipse.jgit', version: '4.7.0.201704051617-r'
 
     compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.5'
+    compile group: 'commons-io', name: 'commons-io', version: '2.4'
+
     testCompile group: 'org.neo4j', name: 'neo4j-kernel', version: "$neo4jVersion", classifier: 'tests'
     testCompile group: 'org.neo4j', name: 'neo4j-io', version: "$neo4jVersion", classifier: 'tests'
     compile "org.neo4j:neo4j-bolt:$neo4jVersion"

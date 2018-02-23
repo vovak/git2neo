@@ -1,4 +1,4 @@
-package org.sorcerers.git2neo.loader
+package org.sorcerers.git2neo.driver.loader
 
 import org.eclipse.jgit.diff.DiffEntry
 import org.eclipse.jgit.diff.RenameDetector
@@ -20,7 +20,9 @@ import java.io.File
  * Created by vovak on 5/1/17.
  */
 class GitLoader(val commitIndex: CommitIndex) {
-    fun loadGitRepo(path: String) {
+    data class RepositoryInfo(val headSha: String)
+
+    fun loadGitRepo(path: String): RepositoryInfo {
         val repoDir = File(path + "/.git")
         val repoBuilder = FileRepositoryBuilder()
         val repo = repoBuilder
@@ -44,6 +46,7 @@ class GitLoader(val commitIndex: CommitIndex) {
             }
         }
         commitIndex.updateChangeParentConnectionsForAllNodes()
+        return RepositoryInfo(headId.name)
     }
 
     fun loadCommit(commit: RevCommit, repository: Repository, revWalk: RevWalk) {
@@ -76,13 +79,18 @@ class GitLoader(val commitIndex: CommitIndex) {
     }
 
     fun DiffEntry.toFileRevision(commit: CommitInfo): FileRevision {
-        return FileRevision(FileRevisionId("id"), this.newPath, this.oldPath, commit, this.changeType.toGit2NeoAction())
+        val action = this.changeType.toGit2NeoAction()
+        val effectiveOldPath = if (this.oldPath == "/dev/null") null else this.oldPath
+        println(action.toString() + "  " + effectiveOldPath + "->" + this.newPath)
+        return FileRevision(FileRevisionId("id"),
+                this.newPath,
+                effectiveOldPath,
+                commit,
+                this.changeType.toGit2NeoAction())
     }
 
 
     fun RevCommit.getChanges(commit: CommitInfo, repository: Repository, revWalk: RevWalk): List<FileRevision> {
-
-
         val parents = this.parents
         println(parents.count())
 
@@ -100,7 +108,7 @@ class GitLoader(val commitIndex: CommitIndex) {
             return DiffEntry.scan(treeWalk)
         }
 
-        fun getMergeDiff(): List<DiffEntry> {
+        fun getDiffByAutomerge(): List<DiffEntry> {
             return try {
                 val autoMergedTree = AutoMerger
                         .automerge(repository, revWalk, this, ThreeWayMergeStrategy.RECURSIVE, false)
@@ -109,7 +117,8 @@ class GitLoader(val commitIndex: CommitIndex) {
                 treeWalk.addTree(autoMergedTree)
                 treeWalk.addTree(this.tree)
 
-                //if a file is similar to one of parents, it is NOT changed in the merge commit! Entries will be empty then.
+                //if a file is similar to one of parents, it is NOT changed in the merge commit!
+                //Entries should be empty then.
                 val entries = DiffEntry.scan(treeWalk)
                 entries
             } catch (e: Exception) {
@@ -118,11 +127,11 @@ class GitLoader(val commitIndex: CommitIndex) {
             }
         }
 
-        var diffEntries: List<DiffEntry> = emptyList()
+        var diffEntries: List<DiffEntry>
         diffEntries = if (parents.count() < 2) {
             getChangesForSimpleCommit()
         } else {
-            getMergeDiff()
+            getDiffByAutomerge()
         }
 
         val renameDetector = RenameDetector(repository)
@@ -132,7 +141,6 @@ class GitLoader(val commitIndex: CommitIndex) {
         diffEntries = renameDetector.compute()
 
         return diffEntries.map { it.toFileRevision(commit) }
-
     }
 
 
