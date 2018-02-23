@@ -1,6 +1,7 @@
 package org.sorcerers.git2neo.driver.loader
 
 import org.eclipse.jgit.diff.DiffEntry
+import org.eclipse.jgit.diff.DiffFormatter
 import org.eclipse.jgit.diff.RenameDetector
 import org.eclipse.jgit.lib.Constants
 import org.eclipse.jgit.lib.PersonIdent
@@ -14,6 +15,7 @@ import org.eclipse.jgit.treewalk.TreeWalk
 import org.sorcerers.git2neo.driver.CommitIndex
 import org.sorcerers.git2neo.model.*
 import org.sorcerers.git2neo.util.use
+import java.io.ByteArrayOutputStream
 import java.io.File
 
 /**
@@ -93,6 +95,7 @@ class GitLoader(val commitIndex: CommitIndex) {
     fun RevCommit.getChanges(commit: CommitInfo, repository: Repository, revWalk: RevWalk): List<FileRevision> {
         val parents = this.parents
         println(parents.count())
+        val diffFormatter = DiffFormatter(ByteArrayOutputStream())
 
         fun getChangesForSimpleCommit(): List<DiffEntry> {
             val treeWalk = TreeWalk(repository)
@@ -105,7 +108,7 @@ class GitLoader(val commitIndex: CommitIndex) {
             }
 
             treeWalk.addTree(this.tree)
-            return DiffEntry.scan(treeWalk)
+            return DiffEntry.scan(treeWalk, true)
         }
 
         fun getDiffByAutomerge(): List<DiffEntry> {
@@ -119,7 +122,7 @@ class GitLoader(val commitIndex: CommitIndex) {
 
                 //if a file is similar to one of parents, it is NOT changed in the merge commit!
                 //Entries should be empty then.
-                val entries = DiffEntry.scan(treeWalk)
+                val entries = DiffEntry.scan(treeWalk, true)
                 entries
             } catch (e: Exception) {
                 println(e.message)
@@ -139,8 +142,25 @@ class GitLoader(val commitIndex: CommitIndex) {
         renameDetector.addAll(diffEntries)
 
         diffEntries = renameDetector.compute()
+        diffEntries = cleanDiffEntries(diffEntries)
 
         return diffEntries.map { it.toFileRevision(commit) }
+    }
+
+    fun cleanDiffEntries(diffEntries: List<DiffEntry>): List<DiffEntry> {
+        if (diffEntries.isEmpty()) return emptyList()
+        val allPaths = diffEntries.sortedByDescending { it.newPath.length }.map { it.newPath }
+        val cleanPaths: MutableSet<String> = HashSet()
+
+
+        //quadratic complexity =/
+        //still OK, as a commit usually has little changes.
+        allPaths.forEach { path ->
+            if (allPaths.filter { it.startsWith(path) }.size == 1)
+                cleanPaths.add(path)
+        }
+
+        return diffEntries.filter { cleanPaths.contains(it.newPath) }
     }
 
 

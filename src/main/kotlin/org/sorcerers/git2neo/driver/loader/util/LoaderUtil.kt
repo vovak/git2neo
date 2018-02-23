@@ -1,4 +1,4 @@
-package org.sorcerers.git2neo.loader.util
+package org.sorcerers.git2neo.driver.loader.util
 
 import java.io.*
 import java.nio.file.*
@@ -15,7 +15,7 @@ fun unzipRepo(name: String): File {
     return File(getRepoUnpackedPath()+"/$name")
 }
 
-private fun extractFolder(zipFile: String, extractFolder: String) {
+fun extractFolder(zipFile: String, extractFolder: String) {
     try {
         val BUFFER = 2048
         val file = File(zipFile)

@@ -1,4 +1,4 @@
-package org.sorcerers.git2neo.loader
+package org.sorcerers.git2neo.driver.loader
 
 import org.junit.After
 import org.junit.Assert
@@ -6,12 +6,13 @@ import org.junit.Before
 import org.junit.Test
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.sorcerers.git2neo.driver.CommitIndex
-import org.sorcerers.git2neo.loader.util.cleanUnpackedRepos
-import org.sorcerers.git2neo.loader.util.removeDir
-import org.sorcerers.git2neo.loader.util.unzipRepo
+import org.sorcerers.git2neo.driver.loader.util.cleanUnpackedRepos
+import org.sorcerers.git2neo.driver.loader.util.removeDir
+import org.sorcerers.git2neo.driver.loader.util.unzipRepo
 import org.sorcerers.git2neo.model.Action
 import org.sorcerers.git2neo.model.CommitId
 import java.io.File
+
 
 class GitLoaderPersistentTest {
     lateinit var myIndex: CommitIndex
@@ -48,7 +49,7 @@ class GitLoaderPersistentTest {
         Assert.assertEquals(1, history[0].items.filter { it.action == Action.CREATED }.size)
     }
 
-    @Test
+    //    @Test
     fun testLargerHistory50kCommits() {
         loadRepo("git")
     }

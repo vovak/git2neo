@@ -1,4 +1,4 @@
-package org.sorcerers.git2neo.loader;
+package org.sorcerers.git2neo.driver.loader;
 
 import org.eclipse.jgit.diff.Sequence;
 import org.eclipse.jgit.dircache.DirCache;
