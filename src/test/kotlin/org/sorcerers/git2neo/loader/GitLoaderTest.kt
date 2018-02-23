@@ -76,6 +76,18 @@ class GitLoaderTest {
     }
 
     @Test
+    fun testFirstParentHistoryWithMergeAndNonTrivialConflict() {
+        loadRepo("repo2")
+
+        val history = myIndex.getChangesHistoriesForCommit(CommitId("13e7d745549489fb89b0fd7e63b358a03e32bcbf"), true)
+        println(history)
+        Assert.assertTrue(history.isNotEmpty())
+        //During the merge, the file was modified. It counts as an edit.
+        Assert.assertEquals(4, history[0].items.size)
+        Assert.assertTrue(history[0].items.any { it.action == Action.CREATED })
+    }
+
+    @Test
     fun testHistoryWithMergeAndNoConflict() {
         loadRepo("repo4")
 
@@ -91,7 +103,8 @@ class GitLoaderTest {
     fun testFirstParentHistoryWithMergeAndNoConflict() {
         loadRepo("repo4")
 
-        val history = myIndex.getChangesHistoriesForCommit(CommitId("08267689cbc24080c9bf655b3bccfeb5fecc4bcd"), true)
+        val history = myIndex.getChangesHistoriesForCommit(CommitId("08267689cbc24080c9bf655b3bccfeb5fecc4bcd"),
+                true)
         println(history)
         Assert.assertTrue(history.isNotEmpty())
         //During the merge, the version from master was accepted. It does NOT count as an edit.
