@@ -1,6 +1,7 @@
 package org.sorcerers.git2neo.loader
 
 import org.eclipse.jgit.diff.DiffEntry
+import org.eclipse.jgit.diff.RenameDetector
 import org.eclipse.jgit.lib.Constants
 import org.eclipse.jgit.lib.PersonIdent
 import org.eclipse.jgit.lib.Repository
@@ -75,7 +76,7 @@ class GitLoader(val commitIndex: CommitIndex) {
     }
 
     fun DiffEntry.toFileRevision(commit: CommitInfo): FileRevision {
-        return FileRevision(FileRevisionId("id"), this.newPath, null, commit, this.changeType.toGit2NeoAction())
+        return FileRevision(FileRevisionId("id"), this.newPath, this.oldPath, commit, this.changeType.toGit2NeoAction())
     }
 
 
@@ -123,6 +124,12 @@ class GitLoader(val commitIndex: CommitIndex) {
         } else {
             getMergeDiff()
         }
+
+        val renameDetector = RenameDetector(repository)
+
+        renameDetector.addAll(diffEntries)
+
+        diffEntries = renameDetector.compute()
 
         return diffEntries.map { it.toFileRevision(commit) }
 
