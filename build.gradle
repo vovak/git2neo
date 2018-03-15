@@ -2,7 +2,7 @@ group 'org.sorcerers'
 version '1.0-SNAPSHOT'
 
 buildscript {
-    ext.kotlinVersion = '1.2.21'
+    ext.kotlinVersion = '1.2.30'
     ext.neo4jVersion = '3.2.2'
 
     repositories {

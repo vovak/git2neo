@@ -9,7 +9,7 @@ import org.sorcerers.git2neo.driver.loader.processRepo
 
 
 fun main(args: Array<String>) {
-    val repoName = "webpack"
+    val repoName = "react"
     processRepo(repoName)
 }
 

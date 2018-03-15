@@ -158,6 +158,7 @@ class GitLoaderTest {
 
     @Test
     fun testPathFiltering2() {
+        Assert.fail()
         //TODO come up with a failing testcase (/dev/null paths, old paths, etc)
     }
 

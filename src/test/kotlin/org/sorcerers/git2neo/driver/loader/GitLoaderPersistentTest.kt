@@ -39,7 +39,7 @@ class GitLoaderPersistentTest {
         loader.loadGitRepo(repo.absolutePath)
     }
 
-    @Test
+//    @Test
     fun testLargerHistory5kCommits() {
         loadRepo("webpack")
         val history = myIndex.getChangesHistoriesForCommit(CommitId("000b34e0c2a23563de9b0e862215846deb3710e7"))

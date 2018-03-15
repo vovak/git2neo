@@ -14,6 +14,7 @@ import org.eclipse.jgit.treewalk.EmptyTreeIterator
 import org.eclipse.jgit.treewalk.TreeWalk
 import org.sorcerers.git2neo.driver.CommitIndex
 import org.sorcerers.git2neo.model.*
+import org.sorcerers.git2neo.util.getFileRevisionId
 import org.sorcerers.git2neo.util.use
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -22,10 +23,10 @@ import java.io.File
  * Created by vovak on 5/1/17.
  */
 class GitLoader(val commitIndex: CommitIndex) {
-    data class RepositoryInfo(val headSha: String)
+    data class RepositoryInfo(val headSha: String, val commitsCount: Int)
 
     fun loadGitRepo(path: String): RepositoryInfo {
-        val repoDir = File(path + "/.git")
+        val repoDir = File(path)
         val repoBuilder = FileRepositoryBuilder()
         val repo = repoBuilder
                 .setGitDir(repoDir)
@@ -36,19 +37,25 @@ class GitLoader(val commitIndex: CommitIndex) {
 
         val headId = repo.resolve(Constants.HEAD)
 
+        var commitsCount = 0
+
         repo.use {
             val revWalk = RevWalk(repo)
             revWalk.use {
                 val headCommit = revWalk.parseCommit(headId)
                 revWalk.markStart(headCommit)
                 revWalk.forEach {
-                    println("Git2Neo Loader: processing commit ${it.id.abbreviate(8).name()} :: ${it.fullMessage} ")
+                    if(++commitsCount % 100 == 0) {
+                        println("Loading commits: $commitsCount done")
+                    }
+//                    println("Git2Neo Loader: processing commit ${it.id.abbreviate(8).name()} :: ${it.fullMessage} ")
                     loadCommit(it, repo, revWalk)
                 }
             }
         }
         commitIndex.updateChangeParentConnectionsForAllNodes()
-        return RepositoryInfo(headId.name)
+
+        return RepositoryInfo(headId.name, commitsCount)
     }
 
     fun loadCommit(commit: RevCommit, repository: Repository, revWalk: RevWalk) {
@@ -83,8 +90,8 @@ class GitLoader(val commitIndex: CommitIndex) {
     fun DiffEntry.toFileRevision(commit: CommitInfo): FileRevision {
         val action = this.changeType.toGit2NeoAction()
         val effectiveOldPath = if (this.oldPath == "/dev/null") null else this.oldPath
-        println(action.toString() + "  " + effectiveOldPath + "->" + this.newPath)
-        return FileRevision(FileRevisionId("id"),
+//        println(action.toString() + "  " + effectiveOldPath + "->" + this.newPath)
+        return FileRevision(getFileRevisionId(commit.id.idString, this.newPath),
                 this.newPath,
                 effectiveOldPath,
                 commit,
@@ -94,7 +101,7 @@ class GitLoader(val commitIndex: CommitIndex) {
 
     fun RevCommit.getChanges(commit: CommitInfo, repository: Repository, revWalk: RevWalk): List<FileRevision> {
         val parents = this.parents
-        println(parents.count())
+//        println(parents.count())
         val diffFormatter = DiffFormatter(ByteArrayOutputStream())
 
         fun getChangesForSimpleCommit(): List<DiffEntry> {

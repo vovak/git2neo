@@ -8,6 +8,8 @@ import org.sorcerers.git2neo.util.use
 import java.util.*
 import java.util.concurrent.Callable
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import kotlin.system.measureTimeMillis
 
 
 /**
@@ -55,6 +57,7 @@ fun Node.getCommitId(): String {
 
 
 class CommitIndex(val db: GraphDatabaseService, val logPrefix: String) : CommitStorage {
+
     fun withDb(block: () -> Unit) {
         db.beginTx().use({ tx: Transaction ->
             block.invoke()
@@ -66,8 +69,10 @@ class CommitIndex(val db: GraphDatabaseService, val logPrefix: String) : CommitS
     init {
         withDb {
             val commitIndexAbsent = db.schema().getIndexes(COMMIT).none()
-            val changeIndexAbsent = db.schema().getIndexes(CHANGE).none()
+
             if (commitIndexAbsent) db.schema().indexFor(COMMIT).on("id").create()
+            val changeIndexAbsent = db.schema().getIndexes(CHANGE).none()
+
             if (changeIndexAbsent) {
                 db.schema().indexFor(CHANGE).on("path").create()
                 db.schema().indexFor(CHANGE).on("id").create()
@@ -160,7 +165,6 @@ class CommitIndex(val db: GraphDatabaseService, val logPrefix: String) : CommitS
         }
 
         nodeIds.forEach {
-            //            println("$logPrefix Updating parent connections for node ${it.getProperty("id")}")
             chunk.add(it)
             done++
             if (done % windowSize == 0 && done > 0) {
@@ -172,7 +176,9 @@ class CommitIndex(val db: GraphDatabaseService, val logPrefix: String) : CommitS
         return connections
     }
 
-    fun getParentConnectionsSearchJob(nodeIds: List<Long>, workerIndex: Int, relatedChangeFinder: RelatedChangeFinder, relationshipType: RelationshipType): Callable<List<RelatedChangeFinder.ChangeConnections>> {
+    fun getParentConnectionsSearchJob(nodeIds: List<Long>, workerIndex: Int,
+                                      relatedChangeFinder: RelatedChangeFinder,
+                                      relationshipType: RelationshipType): Callable<List<RelatedChangeFinder.ChangeConnections>> {
         return Callable {
             try {
                 return@Callable processNodes(nodeIds, workerIndex, relatedChangeFinder, relationshipType)
@@ -219,6 +225,13 @@ class CommitIndex(val db: GraphDatabaseService, val logPrefix: String) : CommitS
     }
 
     fun updateChangeParentConnectionsForAllNodes(relationshipType: RelationshipType) {
+        println("Waiting for db indexes to get online...")
+        withDb {
+            val time = measureTimeMillis {
+                db.schema().awaitIndexesOnline(10, TimeUnit.SECONDS)
+            }
+            println("Done in $time ms")
+        }
         val allNodes: MutableList<Long> = ArrayList()
 
         withDb {

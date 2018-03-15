@@ -47,8 +47,8 @@ class RelatedChangeFinder(val db: GraphDatabaseService) {
 
         val parentCandidates = getCommitNodesPerChangedPaths(paths)
         val parentNodesPerNode: MutableMap<Long, List<Long>> = HashMap()
-        val candidates: MutableSet<Long> = HashSet()
         changeNodes.forEach {
+            val candidates: MutableSet<Long> = HashSet()
             val path = it.getPath()
             val oldPath = it.getOldPath()
 

@@ -3,6 +3,7 @@ package org.sorcerers.git2neo.driver
 import org.junit.Before
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.sorcerers.git2neo.model.*
+import org.sorcerers.git2neo.util.getFileRevisionId
 import java.io.File
 
 /**
@@ -37,7 +38,7 @@ abstract class CommitIndexTestBase {
         val commitInfo = CommitInfo(CommitId(id), Contributor(""), Contributor(""), 0, 0, parentIds.map(::CommitId))
         return Commit(commitInfo, changes.map {
             FileRevision(
-                    FileRevisionId("${id}#${it.second}"),
+                    getFileRevisionId(id, it.second),
                     it.second,
                     it.third,
                     commitInfo,
