@@ -53,7 +53,6 @@ fun processUnzippedRepo(name: String, gitDir: File) {
     val repoDir = File(gitDir.absolutePath.substringBefore(".git"))
     val allPaths = getAllPaths(repoDir).toSet()
 
-
     println(allPaths)
 
     val db = loadDb(name)
@@ -61,8 +60,6 @@ fun processUnzippedRepo(name: String, gitDir: File) {
     val repoInfo = GitLoader(commitIndex).loadGitRepo(gitDir.absolutePath)
 
 
-    println("head: " + repoInfo.headSha)
-//    println("Retrieving commit history from head...")
     val history = commitIndex.getCommitHistory(CommitId(repoInfo.headSha), { _ -> true })
     println(history)
 

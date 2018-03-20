@@ -407,7 +407,10 @@ class CommitIndex(val db: GraphDatabaseService, val logPrefix: String) : CommitS
         val relationshipType = if (firstParent) FIRST_PARENT else PARENT
         withDb {
             val headCommitNode = db.findNode(COMMIT, "id", head.stringId())
-            val commitInfo: CommitInfo = SerializationUtils.deserialize(headCommitNode.getProperty("info") as ByteArray)
+            if (headCommitNode == null) {
+                println("Commit ${head.stringId()} not found in Git2Neo!")
+                return@withDb
+            }
             val changeNodes = headCommitNode.getChanges()
             changeNodes.forEach {
                 val traversal = db.traversalDescription().depthFirst().relationships(relationshipType, Direction.OUTGOING).uniqueness(Uniqueness.NODE_GLOBAL)

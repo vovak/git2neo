@@ -39,13 +39,16 @@ class GitLoader(val commitIndex: CommitIndex) {
 
         var commitsCount = 0
 
+        val allRefs = repo.allRefs.filterKeys { it.contains("heads/") || it.contains("changes/") }.values
+
         repo.use {
             val revWalk = RevWalk(repo)
             revWalk.use {
-                val headCommit = revWalk.parseCommit(headId)
-                revWalk.markStart(headCommit)
+                allRefs.forEach {
+                    revWalk.markStart(revWalk.parseCommit(it.objectId))
+                }
                 revWalk.forEach {
-                    if(++commitsCount % 100 == 0) {
+                    if (++commitsCount % 100 == 0) {
                         println("Loading commits: $commitsCount done")
                     }
 //                    println("Git2Neo Loader: processing commit ${it.id.abbreviate(8).name()} :: ${it.fullMessage} ")
