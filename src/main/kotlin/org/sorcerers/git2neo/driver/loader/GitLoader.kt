@@ -23,9 +23,9 @@ import java.io.File
  * Created by vovak on 5/1/17.
  */
 class GitLoader(val commitIndex: CommitIndex) {
-    data class RepositoryInfo(val headSha: String, val commitsCount: Int)
+    data class RepositoryInfo(val headSha: String, val commitsCount: Int, val allCommits: Collection<Commit>)
 
-    fun loadGitRepo(path: String): RepositoryInfo {
+    fun loadGitRepo(path: String, collectCommits: Boolean): RepositoryInfo {
         val repoDir = File(path)
         val repoBuilder = FileRepositoryBuilder()
         val repo = repoBuilder
@@ -41,6 +41,8 @@ class GitLoader(val commitIndex: CommitIndex) {
 
         val allRefs = repo.allRefs.filterKeys { it.contains("heads/") || it.contains("changes/") }.values
 
+        val allCommits: MutableList<Commit> = ArrayList()
+
         repo.use {
             val revWalk = RevWalk(repo)
             revWalk.use {
@@ -52,18 +54,19 @@ class GitLoader(val commitIndex: CommitIndex) {
                         println("Loading commits: $commitsCount done")
                     }
 //                    println("Git2Neo Loader: processing commit ${it.id.abbreviate(8).name()} :: ${it.fullMessage} ")
-                    loadCommit(it, repo, revWalk)
+                    val git2NeoCommit = it.toGit2NeoCommit(repo, revWalk)
+
+                    if(collectCommits) {
+                        allCommits.add(git2NeoCommit)
+                    }
+
+                    commitIndex.add(git2NeoCommit, updateParents = false)
                 }
             }
         }
         commitIndex.updateChangeParentConnectionsForAllNodes()
 
-        return RepositoryInfo(headId.name, commitsCount)
-    }
-
-    fun loadCommit(commit: RevCommit, repository: Repository, revWalk: RevWalk) {
-        val git2NeoCommit = commit.toGit2NeoCommit(repository, revWalk)
-        commitIndex.add(git2NeoCommit, updateParents = false)
+        return RepositoryInfo(headId.name, commitsCount, allCommits)
     }
 
     fun PersonIdent.toContributor(): Contributor {

@@ -57,7 +57,7 @@ fun processUnzippedRepo(name: String, gitDir: File) {
 
     val db = loadDb(name)
     val commitIndex = CommitIndexFactory().loadCommitIndex(db, "db_$name")
-    val repoInfo = GitLoader(commitIndex).loadGitRepo(gitDir.absolutePath)
+    val repoInfo = GitLoader(commitIndex).loadGitRepo(gitDir.absolutePath, false)
 
 
     val history = commitIndex.getCommitHistory(CommitId(repoInfo.headSha), { _ -> true })
