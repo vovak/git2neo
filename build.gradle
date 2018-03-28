@@ -27,7 +27,7 @@ repositories {
 dependencies {
     compile "org.neo4j:neo4j:$neo4jVersion"
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
-    compile group: 'org.eclipse.jgit', name: 'org.eclipse.jgit', version: '4.7.0.201704051617-r'
+    compile group: 'org.eclipse.jgit', name: 'org.eclipse.jgit', version: '4.11.0.201803080745-r'
 
     compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.5'
     compile group: 'commons-io', name: 'commons-io', version: '2.4'
