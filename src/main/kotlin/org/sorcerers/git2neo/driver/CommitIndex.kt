@@ -293,6 +293,19 @@ class CommitIndex(val db: GraphDatabaseService, val logPrefix: String) : CommitS
         if (updateParents) updateChangeParentConnectionsForAllNodes()
     }
 
+    private fun fullNodeExists(id: CommitId): Boolean {
+        var exists = false
+        withDb {
+            val node = getRawNode(id)
+            exists = node!=null && node.hasProperty("info")
+        }
+        return exists
+    }
+
+    fun addIfNotExists(commit: Commit, updateParents: Boolean) {
+        if (!fullNodeExists(commit.info.id)) add(commit, updateParents)
+    }
+
     override fun addAll(commits: Collection<Commit>) {
         println("$logPrefix Adding ${commits.size} nodes to db")
         val windowSize = 1000
@@ -372,10 +385,17 @@ class CommitIndex(val db: GraphDatabaseService, val logPrefix: String) : CommitS
     }
 
     fun getCommitHistory(head: Id<Commit>, filter: (Commit) -> Boolean): History<Commit> {
+        return getCommitHistory(head, filter, false)
+    }
+
+    fun getCommitHistory(head: Id<Commit>, filter: (Commit) -> Boolean, firstParentOnly: Boolean): History<Commit> {
         val commits: MutableList<Commit> = ArrayList()
+        val traverseType = if (firstParentOnly) FIRST_PARENT else PARENT
         withDb {
             val headNode = db.findNode(COMMIT, "id", head.stringId())
-            val traversal = db.traversalDescription().depthFirst().relationships(PARENT, Direction.OUTGOING).uniqueness(Uniqueness.NODE_GLOBAL)
+            val traversal = db.traversalDescription().depthFirst()
+                    .relationships(traverseType, Direction.OUTGOING)
+                    .uniqueness(Uniqueness.NODE_GLOBAL)
             val result = traversal.traverse(headNode)
             result.nodes().forEach { commits.add(it.toCommit()) }
         }

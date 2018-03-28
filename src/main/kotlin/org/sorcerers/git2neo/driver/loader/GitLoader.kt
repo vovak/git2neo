@@ -25,6 +25,8 @@ import java.io.File
 class GitLoader(val commitIndex: CommitIndex) {
     data class RepositoryInfo(val headSha: String, val commitsCount: Int, val allCommits: Collection<Commit>)
 
+    fun loadGitRepo(path: String): RepositoryInfo = loadGitRepo(path, false)
+    
     fun loadGitRepo(path: String, collectCommits: Boolean): RepositoryInfo {
         val repoDir = File(path)
         val repoBuilder = FileRepositoryBuilder()
@@ -60,12 +62,11 @@ class GitLoader(val commitIndex: CommitIndex) {
                         allCommits.add(git2NeoCommit)
                     }
 
-                    commitIndex.add(git2NeoCommit, updateParents = false)
+                    commitIndex.addIfNotExists(git2NeoCommit, updateParents = false)
                 }
             }
         }
         commitIndex.updateChangeParentConnectionsForAllNodes()
-
         return RepositoryInfo(headId.name, commitsCount, allCommits)
     }
 
