@@ -34,10 +34,10 @@ class CommitIndexTest : CommitIndexTestBase() {
         index.add(createCommit("0", null))
         index.add(createCommit("1", "0"))
 
-        val trivialHistory = index.getCommitHistory(CommitId("0"), { true })
+        val trivialHistory = index.getCommitHistory(CommitId("0"))
         Assert.assertEquals(1, trivialHistory.items.size)
 
-        val fullHistory = index.getCommitHistory(CommitId("1"), { true })
+        val fullHistory = index.getCommitHistory(CommitId("1"))
         Assert.assertEquals(2, fullHistory.items.size)
     }
 
@@ -50,7 +50,7 @@ class CommitIndexTest : CommitIndexTestBase() {
         index.add(createCommit("merge", listOf("left", "right")))
         index.add(createCommit("head", "merge"))
 
-        val fullHistory = index.getCommitHistory(CommitId("head"), { true })
+        val fullHistory = index.getCommitHistory(CommitId("head"))
         Assert.assertEquals(5, fullHistory.items.size)
     }
 
@@ -72,7 +72,7 @@ class CommitIndexTest : CommitIndexTestBase() {
         Assert.assertNotNull(headCommit)
         val headCommitChange = headCommit!!.changes.first()
 
-        val changesHistory = index.getChangesHistory(headCommitChange.id, {true})
+        val changesHistory = index.getChangesHistory(headCommitChange.id)
         Assert.assertEquals(2, changesHistory.items.size)
     }
 
@@ -85,7 +85,7 @@ class CommitIndexTest : CommitIndexTestBase() {
         Assert.assertNotNull(headCommit)
         val headCommitChange = headCommit!!.changes.first()
 
-        val changesHistory = index.getChangesHistory(headCommitChange.id, {true})
+        val changesHistory = index.getChangesHistory(headCommitChange.id)
         Assert.assertEquals(2, changesHistory.items.size)
     }
 
@@ -101,7 +101,7 @@ class CommitIndexTest : CommitIndexTestBase() {
         Assert.assertNotNull(headCommit)
         val headCommitChange = headCommit!!.changes.first()
 
-        val changesHistory = index.getChangesHistory(headCommitChange.id, {true})
+        val changesHistory = index.getChangesHistory(headCommitChange.id)
         Assert.assertEquals(2, changesHistory.items.size)
     }
 
@@ -118,7 +118,7 @@ class CommitIndexTest : CommitIndexTestBase() {
         Assert.assertNotNull(headCommit)
         val headCommitChange = headCommit!!.changes.first()
 
-        val changesHistory = index.getChangesHistory(headCommitChange.id, {true})
+        val changesHistory = index.getChangesHistory(headCommitChange.id)
         Assert.assertEquals(6, changesHistory.items.size)
     }
 
@@ -135,11 +135,11 @@ class CommitIndexTest : CommitIndexTestBase() {
         Assert.assertNotNull(headCommit)
         val headCommitChange = headCommit!!.changes.first()
 
-        val changesHistory = index.getChangesHistory(headCommitChange.id, {true})
+        val changesHistory = index.getChangesHistory(headCommitChange.id)
         Assert.assertEquals(5, changesHistory.items.size)
 
         val headForB = index.get(CommitId("4"))!!.changes.first()
-        val changesForBHistory = index.getChangesHistory(headForB.id, {true})
+        val changesForBHistory = index.getChangesHistory(headForB.id)
         Assert.assertEquals(3, changesForBHistory.items.size)
     }
 
@@ -157,14 +157,14 @@ class CommitIndexTest : CommitIndexTestBase() {
         Assert.assertNotNull(beforeHead)
         val beforeHeadCommitChange = beforeHead!!.changes.first()
 
-        val changesHistoryBeforeHead = index.getChangesHistory(beforeHeadCommitChange.id, {true})
+        val changesHistoryBeforeHead = index.getChangesHistory(beforeHeadCommitChange.id)
         Assert.assertEquals(5, changesHistoryBeforeHead.items.size)
 
         val head = index.get(CommitId("5"))
         Assert.assertNotNull(head)
         val headCommitChange = head!!.changes.first()
 
-        val changesHistoryHead = index.getChangesHistory(headCommitChange.id, {true})
+        val changesHistoryHead = index.getChangesHistory(headCommitChange.id)
         Assert.assertEquals(6, changesHistoryHead.items.size)
     }
 
@@ -183,14 +183,14 @@ class CommitIndexTest : CommitIndexTestBase() {
         Assert.assertNotNull(beforeHead)
         val beforeHeadCommitChange = beforeHead!!.changes.first()
 
-        val changesHistoryBeforeHead = index.getChangesHistory(beforeHeadCommitChange.id, {true})
+        val changesHistoryBeforeHead = index.getChangesHistory(beforeHeadCommitChange.id)
         Assert.assertEquals(5, changesHistoryBeforeHead.items.size)
 
         val head = index.get(CommitId("5"))
         Assert.assertNotNull(head)
         val headCommitChange = head!!.changes.first()
 
-        val changesHistoryHead = index.getChangesHistory(headCommitChange.id, {true})
+        val changesHistoryHead = index.getChangesHistory(headCommitChange.id)
         Assert.assertEquals(6, changesHistoryHead.items.size)
     }
 

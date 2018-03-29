@@ -28,7 +28,7 @@ class CommitIndexBulkTest : CommitIndexTestBase() {
 
         start = System.currentTimeMillis()
 
-        val leftHistory = index.getCommitHistory(CommitId("left_$height"), { true })
+        val leftHistory = index.getCommitHistory(CommitId("left_$height"))
         executionTime = System.currentTimeMillis() - start
         println("Acquired history of ${2 * height} revisions in ${1.0 * executionTime / 1000} seconds")
 
@@ -37,7 +37,7 @@ class CommitIndexBulkTest : CommitIndexTestBase() {
 
         start = System.currentTimeMillis()
 
-        val rightHistory = index.getCommitHistory(CommitId("right_${height}"), { true })
+        val rightHistory = index.getCommitHistory(CommitId("right_${height}"))
         executionTime = System.currentTimeMillis() - start
         println("Acquired history of ${height} revisions in ${1.0 * executionTime / 1000} seconds")
 
@@ -64,7 +64,7 @@ class CommitIndexBulkTest : CommitIndexTestBase() {
 
         fun getHistoryForOnlyChange(commitId: String): History<FileRevision> {
             val changeId = index.get(CommitId(commitId))!!.changes.first().id
-            val history = index.getChangesHistory(changeId, {true})
+            val history = index.getChangesHistory(changeId)
             return history
         }
 

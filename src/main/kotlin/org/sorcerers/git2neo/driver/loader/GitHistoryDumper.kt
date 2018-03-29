@@ -60,7 +60,7 @@ fun processUnzippedRepo(name: String, gitDir: File) {
     val repoInfo = GitLoader(commitIndex).loadGitRepo(gitDir.absolutePath, false)
 
 
-    val history = commitIndex.getCommitHistory(CommitId(repoInfo.headSha), { _ -> true })
+    val history = commitIndex.getCommitHistory(CommitId(repoInfo.headSha))
     println(history)
 
     val lastRevisionPerPath: MutableMap<String, String> = HashMap()
@@ -93,8 +93,8 @@ fun processUnzippedRepo(name: String, gitDir: File) {
 
 
     lastRevisionPerPath.forEach { path, lastRevision ->
-        val fullHistory = commitIndex.getChangesHistory(getFileRevisionId(lastRevision, path), { _ -> true })
-        val linearHistory = commitIndex.getChangesHistory(getFileRevisionId(lastRevision, path), { _ -> true }, true)
+        val fullHistory = commitIndex.getChangesHistory(getFileRevisionId(lastRevision, path))
+        val linearHistory = commitIndex.getChangesHistory(getFileRevisionId(lastRevision, path), true)
 
         fullHistories.add(fullHistory)
         linearHistories.add(linearHistory)

@@ -67,6 +67,7 @@ class GitLoader(val commitIndex: CommitIndex) {
             }
         }
         commitIndex.updateChangeParentConnectionsForAllNodes()
+        commitIndex.dispose()
         return RepositoryInfo(headId.name, commitsCount, allCommits)
     }
 

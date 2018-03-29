@@ -58,6 +58,12 @@ fun Node.getCommitId(): String {
 
 class CommitIndex(val db: GraphDatabaseService, val logPrefix: String) : CommitStorage {
 
+    //Should be called after using to prevent memory leaks
+    fun dispose() {
+        println("$logPrefix: Shutting down the db...")
+        db.shutdown()
+    }
+
     fun withDb(block: () -> Unit) {
         db.beginTx().use({ tx: Transaction ->
             block.invoke()
@@ -384,11 +390,11 @@ class CommitIndex(val db: GraphDatabaseService, val logPrefix: String) : CommitS
         return db.findNode(COMMIT, "id", id.idString)
     }
 
-    fun getCommitHistory(head: Id<Commit>, filter: (Commit) -> Boolean): History<Commit> {
-        return getCommitHistory(head, filter, false)
+    fun getCommitHistory(head: Id<Commit>): History<Commit> {
+        return getCommitHistory(head, false)
     }
 
-    fun getCommitHistory(head: Id<Commit>, filter: (Commit) -> Boolean, firstParentOnly: Boolean): History<Commit> {
+    fun getCommitHistory(head: Id<Commit>, firstParentOnly: Boolean): History<Commit> {
         val commits: MutableList<Commit> = ArrayList()
         val traverseType = if (firstParentOnly) FIRST_PARENT else PARENT
         withDb {
@@ -402,11 +408,11 @@ class CommitIndex(val db: GraphDatabaseService, val logPrefix: String) : CommitS
         return History(commits)
     }
 
-    fun getChangesHistory(head: Id<FileRevision>, filter: (FileRevision) -> Boolean): History<FileRevision> {
-        return getChangesHistory(head, filter, false)
+    fun getChangesHistory(head: Id<FileRevision>): History<FileRevision> {
+        return getChangesHistory(head, false)
     }
 
-    fun getChangesHistory(head: Id<FileRevision>, filter: (FileRevision) -> Boolean, firstParent: Boolean): History<FileRevision> {
+    fun getChangesHistory(head: Id<FileRevision>, firstParent: Boolean): History<FileRevision> {
         val changes: MutableList<FileRevision> = ArrayList()
         val relationshipType = if (firstParent) FIRST_PARENT else PARENT
         withDb {
