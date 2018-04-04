@@ -178,16 +178,8 @@ class GitLoaderTest {
         Assert.assertTrue(histories[2].items.any { it.action == Action.CREATED })
     }
 
-
     fun testPathFiltering2() {
         Assert.fail()
         //TODO come up with a failing testcase (/dev/null paths, old paths, etc)
     }
-
-    @Test
-    fun testLargerHistory200Commits() {
-        loadRepo("changedb")
-    }
-
-
 }
