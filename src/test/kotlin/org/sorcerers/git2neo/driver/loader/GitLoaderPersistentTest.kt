@@ -3,7 +3,6 @@ package org.sorcerers.git2neo.driver.loader
 import org.junit.After
 import org.junit.Assert
 import org.junit.Before
-import org.junit.Test
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.sorcerers.git2neo.driver.CommitIndex
 import org.sorcerers.git2neo.driver.loader.util.cleanUnpackedRepos
@@ -29,6 +28,7 @@ class GitLoaderPersistentTest {
 
     @After
     fun clean() {
+        myIndex.dispose()
         cleanUnpackedRepos()
         removeDir(testDbPath)
     }

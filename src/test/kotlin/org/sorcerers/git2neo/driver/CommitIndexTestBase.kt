@@ -1,5 +1,6 @@
 package org.sorcerers.git2neo.driver
 
+import org.junit.After
 import org.junit.Before
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.sorcerers.git2neo.model.*
@@ -18,6 +19,11 @@ abstract class CommitIndexTestBase {
         val path = "./testdb"
         val db = TestGraphDatabaseFactory().newImpermanentDatabase(File(path))
         myIndex = CommitIndex(db, javaClass.canonicalName)
+    }
+
+    @After
+    fun cleanUp() {
+        myIndex.dispose()
     }
 
     fun getIndex(): CommitIndex {

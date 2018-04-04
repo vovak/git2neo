@@ -25,14 +25,15 @@ class GitLoaderTest {
 
     @After
     fun clean() {
-        myIndex.db.shutdown()
+        println("Disposing of db...")
+        myIndex.dispose()
         cleanUnpackedRepos()
     }
 
     private fun loadRepo(name: String) {
         val repo = unzipRepo(name)
         val loader = GitLoader(myIndex)
-        loader.loadGitRepo(repo.absolutePath+"/.git")
+        loader.loadGitRepo(repo.absolutePath+"/.git", collectCommits = false, disposeDb = false)
     }
 
     @Test
