@@ -95,3 +95,9 @@ fun removeDir(path: String) {
         }
     })
 }
+
+fun pathContainsSubPath(path: String, subPath: String): Boolean {
+    if(path == subPath) return true
+    val effectiveDirPath = if(!subPath.endsWith("/")) "$subPath/" else subPath
+    return path.startsWith(effectiveDirPath)
+}

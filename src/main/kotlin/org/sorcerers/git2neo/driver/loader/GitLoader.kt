@@ -13,6 +13,7 @@ import org.eclipse.jgit.storage.file.FileRepositoryBuilder
 import org.eclipse.jgit.treewalk.EmptyTreeIterator
 import org.eclipse.jgit.treewalk.TreeWalk
 import org.sorcerers.git2neo.driver.CommitIndex
+import org.sorcerers.git2neo.driver.loader.util.pathContainsSubPath
 import org.sorcerers.git2neo.model.*
 import org.sorcerers.git2neo.util.getFileRevisionId
 import org.sorcerers.git2neo.util.use
@@ -171,11 +172,10 @@ class GitLoader(val commitIndex: CommitIndex) {
         val allPaths = diffEntries.sortedByDescending { it.newPath.length }.map { it.newPath }
         val cleanPaths: MutableSet<String> = HashSet()
 
-
         //quadratic complexity =/
         //still OK, as a commit usually has little changes.
         allPaths.forEach { path ->
-            if (allPaths.filter { it.startsWith(path) }.size == 1)
+            if (allPaths.filter { pathContainsSubPath(it, path) }.size == 1)
                 cleanPaths.add(path)
         }
 
