@@ -156,6 +156,37 @@ class GitLoaderTest {
         Assert.assertEquals("src/file.txt", filename)
     }
 
+    @Test
+    fun testPostfixNamesPathFiltering1() {
+        loadRepo("repo8")
+
+        val histories = myIndex.getChangesHistoriesForCommit(CommitId("5c625d52e3e2163cbe8fc6aeac6da59da70b1995"))
+        Assert.assertEquals(2, histories.size)
+        Assert.assertTrue(histories[0].items.any { it.action == Action.CREATED })
+        Assert.assertTrue(histories[1].items.any { it.action == Action.CREATED })
+    }
+
+    @Test
+    fun testPostfixNamesPathFiltering2() {
+        loadRepo("repo9")
+
+        val histories = myIndex.getChangesHistoriesForCommit(CommitId("91e99c3266ebaca77cfc14266db78a4a19369053"))
+        Assert.assertEquals(2, histories.size)
+        Assert.assertTrue(histories[0].items.any { it.action == Action.CREATED })
+        Assert.assertTrue(histories[1].items.any { it.action == Action.CREATED })
+    }
+
+    @Test
+    fun testPostfixNamesPathFiltering3() {
+        loadRepo("repo10")
+
+        val histories = myIndex.getChangesHistoriesForCommit(CommitId("02c63f65f2fdc35c9df199dd2573c883f1e4c961"))
+        Assert.assertEquals(3, histories.size)
+        Assert.assertTrue(histories[0].items.any { it.action == Action.CREATED })
+        Assert.assertTrue(histories[1].items.any { it.action == Action.CREATED })
+        Assert.assertTrue(histories[2].items.any { it.action == Action.CREATED })
+    }
+
 
     fun testPathFiltering2() {
         Assert.fail()

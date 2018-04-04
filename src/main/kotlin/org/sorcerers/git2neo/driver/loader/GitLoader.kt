@@ -25,9 +25,11 @@ import java.io.File
 class GitLoader(val commitIndex: CommitIndex) {
     data class RepositoryInfo(val headSha: String, val commitsCount: Int, val allCommits: Collection<Commit>)
 
-    fun loadGitRepo(path: String): RepositoryInfo = loadGitRepo(path, false)
-    
-    fun loadGitRepo(path: String, collectCommits: Boolean): RepositoryInfo {
+    fun loadGitRepo(path: String): RepositoryInfo = loadGitRepo(path, false, false)
+
+    fun loadGitRepo(path: String, collectCommits: Boolean): RepositoryInfo = loadGitRepo(path, collectCommits, true)
+
+    fun loadGitRepo(path: String, collectCommits: Boolean, disposeDb: Boolean): RepositoryInfo {
         val repoDir = File(path)
         val repoBuilder = FileRepositoryBuilder()
         val repo = repoBuilder
@@ -58,7 +60,7 @@ class GitLoader(val commitIndex: CommitIndex) {
 //                    println("Git2Neo Loader: processing commit ${it.id.abbreviate(8).name()} :: ${it.fullMessage} ")
                     val git2NeoCommit = it.toGit2NeoCommit(repo, revWalk)
 
-                    if(collectCommits) {
+                    if (collectCommits) {
                         allCommits.add(git2NeoCommit)
                     }
 
@@ -67,7 +69,9 @@ class GitLoader(val commitIndex: CommitIndex) {
             }
         }
         commitIndex.updateChangeParentConnectionsForAllNodes()
-        commitIndex.dispose()
+        if (disposeDb) {
+            commitIndex.dispose()
+        }
         return RepositoryInfo(headId.name, commitsCount, allCommits)
     }
 
