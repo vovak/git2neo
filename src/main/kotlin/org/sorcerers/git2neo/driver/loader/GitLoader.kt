@@ -108,7 +108,8 @@ class GitLoader(val commitIndex: CommitIndex) {
                 this.newPath,
                 effectiveOldPath,
                 commit,
-                this.changeType.toGit2NeoAction())
+                this.changeType.toGit2NeoAction(),
+                null)
     }
 
 

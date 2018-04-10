@@ -48,7 +48,8 @@ abstract class CommitIndexTestBase {
                     it.second,
                     it.third,
                     commitInfo,
-                    it.first)
+                    it.first,
+                    null)
         })
     }
 

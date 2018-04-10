@@ -41,7 +41,8 @@ data class FileRevision(
         val path: String,
         val oldPath: String?,
         val commitInfo: CommitInfo,
-        val action: Action
+        val action: Action,
+        val parentRevisions: Collection<FileRevisionId>?
 )
 
 data class Commit(val info: CommitInfo, val changes: Collection<FileRevision>)

@@ -352,7 +352,8 @@ class CommitIndex(val db: GraphDatabaseService, val logPrefix: String) : CommitS
                 this.getProperty("path") as String,
                 if (hasOldPath) this.getProperty("oldPath") as String else null,
                 commitInfo,
-                Action.valueOf(this.getProperty("action") as String)
+                Action.valueOf(this.getProperty("action") as String),
+                this.getParentRevisions()
         )
     }
 
@@ -363,8 +364,15 @@ class CommitIndex(val db: GraphDatabaseService, val logPrefix: String) : CommitS
                 this.getProperty("path") as String,
                 if (hasOldPath) this.getProperty("oldPath") as String else null,
                 SerializationUtils.deserialize(this.getCommit().getProperty("info") as ByteArray),
-                Action.valueOf(this.getProperty("action") as String)
+                Action.valueOf(this.getProperty("action") as String),
+                this.getParentRevisions()
         )
+    }
+
+    fun Node.getParentRevisions(): Collection<FileRevisionId> {
+        return this.getRelationships(org.sorcerers.git2neo.driver.PARENT, org.neo4j.graphdb.Direction.OUTGOING).map {
+            FileRevisionId(it.endNode.getProperty("id") as String)
+        }
     }
 
     fun Node.toCommit(): Commit {
