@@ -59,7 +59,10 @@ fun processUnzippedRepo(name: String, gitDir: File) {
     val commitIndex = CommitIndexFactory().loadCommitIndex(db, "db_$name")
     val repoInfo = GitLoader(commitIndex).loadGitRepo(gitDir.absolutePath, false)
 
-
+    if (repoInfo.headSha == null) {
+        println("Cannot process the repo: HEAD not found")
+        return
+    }
     val history = commitIndex.getCommitHistory(CommitId(repoInfo.headSha))
     println(history)
 

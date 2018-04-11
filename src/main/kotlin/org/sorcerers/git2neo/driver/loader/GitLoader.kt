@@ -24,7 +24,7 @@ import java.io.File
  * Created by vovak on 5/1/17.
  */
 class GitLoader(val commitIndex: CommitIndex) {
-    data class RepositoryInfo(val headSha: String, val commitsCount: Int, val allCommits: Collection<Commit>)
+    data class RepositoryInfo(val headSha: String?, val commitsCount: Int, val allCommits: Collection<Commit>)
 
     fun loadGitRepo(path: String): RepositoryInfo = loadGitRepo(path, false, false)
 
@@ -73,7 +73,7 @@ class GitLoader(val commitIndex: CommitIndex) {
         if (disposeDb) {
             commitIndex.dispose()
         }
-        return RepositoryInfo(headId.name, commitsCount, allCommits)
+        return RepositoryInfo(headId?.name, commitsCount, allCommits)
     }
 
     fun PersonIdent.toContributor(): Contributor {
