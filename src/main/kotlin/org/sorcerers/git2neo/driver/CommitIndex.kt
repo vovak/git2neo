@@ -409,7 +409,7 @@ class CommitIndex(val db: GraphDatabaseService, val logPrefix: String) : CommitS
             val headNode = db.findNode(COMMIT, "id", head.stringId())
             val traversal = db.traversalDescription().depthFirst()
                     .relationships(traverseType, Direction.OUTGOING)
-                    .uniqueness(Uniqueness.NODE_GLOBAL)
+                    .uniqueness(Uniqueness.NODE_PATH)
             val result = traversal.traverse(headNode)
             result.nodes().forEach { commits.add(it.toCommit()) }
         }
