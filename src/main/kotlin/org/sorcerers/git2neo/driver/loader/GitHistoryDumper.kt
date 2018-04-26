@@ -39,9 +39,7 @@ fun unzipRepo(name: String): File {
     return File(getRepoUnpackedPath() + "/$name")
 }
 
-fun loadDb(name: String): GraphDatabaseService {
-    val path = "./testneo4jdb_$name"
-
+fun loadDb(path: String): GraphDatabaseService {
     val graphDb = GraphDatabaseFactory()
             .newEmbeddedDatabaseBuilder(File(path))
             .newGraphDatabase()
@@ -116,11 +114,6 @@ fun processUnzippedRepo(name: String, gitDir: File) {
     dumpHistories("${name}_full", fullHistories)
 
     db.shutdown()
-}
-
-fun processRepo(name: String) {
-    val repoDir = unzipRepo(name)
-    processUnzippedRepo(name, repoDir)
 }
 
 fun dumpHistories(prefix: String, histories: Collection<History<FileRevision>>) {
