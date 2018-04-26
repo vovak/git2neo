@@ -1,7 +1,7 @@
-package org.sorcerers.git2neo.util
+package org.researchgroup.git2neo.util
 
 /**
- * @author vovak
+ * @author *blinded*
  * @since 18/11/16
  */
 inline fun <T : AutoCloseable, R> T.use(block: (T) -> R): R {

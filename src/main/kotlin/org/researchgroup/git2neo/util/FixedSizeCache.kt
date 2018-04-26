@@ -1,9 +1,9 @@
-package org.sorcerers.git2neo.util
+package org.researchgroup.git2neo.util
 
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * Created by vovak on 3/27/17.
+ * Created by  on 3/27/17.
  */
 class FixedSizeCache<K,V>(val sizeLimit: Int) {
     private val map: MutableMap<K, V> = ConcurrentHashMap()

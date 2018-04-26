@@ -1,14 +1,14 @@
-package org.sorcerers.git2neo.driver
+package org.researchgroup.git2neo.driver
 
 import org.junit.After
 import org.junit.Before
 import org.neo4j.test.TestGraphDatabaseFactory
-import org.sorcerers.git2neo.model.*
-import org.sorcerers.git2neo.util.getFileRevisionId
+import org.researchgroup.git2neo.model.*
+import org.researchgroup.git2neo.util.getFileRevisionId
 import java.io.File
 
 /**
- * @author vovak
+ * @author
  * @since 21/11/16
  */
 abstract class CommitIndexTestBase {

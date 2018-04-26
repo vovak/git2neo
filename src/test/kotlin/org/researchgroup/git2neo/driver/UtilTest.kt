@@ -1,8 +1,8 @@
-package org.sorcerers.git2neo.driver
+package org.researchgroup.git2neo.driver
 
 import org.junit.Assert
 import org.junit.Test
-import org.sorcerers.git2neo.driver.loader.util.pathContainsSubPath
+import org.researchgroup.git2neo.driver.loader.util.pathContainsSubPath
 
 class UtilTest {
     @Test

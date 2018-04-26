@@ -1,4 +1,4 @@
-package org.sorcerers.git2neo.driver.loader.util
+package org.researchgroup.git2neo.driver.loader.util
 
 import java.io.*
 import java.nio.file.*
@@ -12,7 +12,7 @@ fun getRepoUnpackedPath(): String = "testData/unpacked/"
 
 fun unzipRepo(name: String): File {
     extractFolder(getRepoArchivePath(name), getRepoUnpackedPath())
-    return File(getRepoUnpackedPath()+"/$name")
+    return File(getRepoUnpackedPath() + "/$name")
 }
 
 fun extractFolder(zipFile: String, extractFolder: String) {

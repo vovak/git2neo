@@ -1,8 +1,11 @@
-package org.sorcerers.git2neo.driver.loader
+package org.researchgroup.git2neo.driver.loader
 
 import org.eclipse.jgit.dircache.DirCache
 import org.eclipse.jgit.dircache.DirCacheEntry
-import org.eclipse.jgit.lib.*
+import org.eclipse.jgit.lib.Constants
+import org.eclipse.jgit.lib.ObjectId
+import org.eclipse.jgit.lib.ObjectInserter
+import org.eclipse.jgit.lib.Repository
 import org.eclipse.jgit.merge.MergeFormatter
 import org.eclipse.jgit.merge.ResolveMerger
 import org.eclipse.jgit.merge.ThreeWayMergeStrategy
@@ -10,12 +13,10 @@ import org.eclipse.jgit.revwalk.RevCommit
 import org.eclipse.jgit.revwalk.RevTree
 import org.eclipse.jgit.revwalk.RevWalk
 import org.eclipse.jgit.util.TemporaryBuffer
-import org.sorcerers.git2neo.util.use
-
+import org.researchgroup.git2neo.util.use
 import java.io.IOException
-import java.util.HashMap
-
 import java.nio.charset.StandardCharsets.UTF_8
+import java.util.*
 
 object AutoMerger {
     @Throws(IOException::class)

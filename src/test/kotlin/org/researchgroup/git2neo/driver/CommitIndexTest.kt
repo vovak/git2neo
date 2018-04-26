@@ -1,15 +1,15 @@
-package org.sorcerers.git2neo.driver
+package org.researchgroup.git2neo.driver
 
 import org.junit.Assert
 import org.junit.Test
-import org.sorcerers.git2neo.model.Action
-import org.sorcerers.git2neo.model.Commit
-import org.sorcerers.git2neo.model.CommitId
-import org.sorcerers.git2neo.util.getFileRevisionId
+import org.researchgroup.git2neo.model.Action
+import org.researchgroup.git2neo.model.Commit
+import org.researchgroup.git2neo.model.CommitId
+import org.researchgroup.git2neo.util.getFileRevisionId
 import java.util.*
 
 /**
- * @author vovak
+ * @author
  * @since 17/11/16
  */
 class CommitIndexTest : CommitIndexTestBase() {

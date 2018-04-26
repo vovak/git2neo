@@ -1,17 +1,17 @@
-package org.sorcerers.git2neo.driver.loader
+package org.researchgroup.git2neo.driver.loader
 
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.filefilter.TrueFileFilter
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
-import org.sorcerers.git2neo.driver.CommitIndexFactory
-import org.sorcerers.git2neo.driver.loader.util.extractFolder
-import org.sorcerers.git2neo.driver.loader.util.getRepoArchivePath
-import org.sorcerers.git2neo.driver.loader.util.getRepoUnpackedPath
-import org.sorcerers.git2neo.model.CommitId
-import org.sorcerers.git2neo.model.FileRevision
-import org.sorcerers.git2neo.model.History
-import org.sorcerers.git2neo.util.getFileRevisionId
+import org.researchgroup.git2neo.driver.CommitIndexFactory
+import org.researchgroup.git2neo.driver.loader.util.extractFolder
+import org.researchgroup.git2neo.driver.loader.util.getRepoArchivePath
+import org.researchgroup.git2neo.driver.loader.util.getRepoUnpackedPath
+import org.researchgroup.git2neo.model.CommitId
+import org.researchgroup.git2neo.model.FileRevision
+import org.researchgroup.git2neo.model.History
+import org.researchgroup.git2neo.util.getFileRevisionId
 import java.io.File
 
 

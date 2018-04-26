@@ -1,4 +1,4 @@
-package org.sorcerers.git2neo.driver.loader
+package org.researchgroup.git2neo.driver.loader
 
 import org.eclipse.jgit.diff.DiffEntry
 import org.eclipse.jgit.diff.DiffFormatter
@@ -12,16 +12,16 @@ import org.eclipse.jgit.revwalk.RevWalk
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder
 import org.eclipse.jgit.treewalk.EmptyTreeIterator
 import org.eclipse.jgit.treewalk.TreeWalk
-import org.sorcerers.git2neo.driver.CommitIndex
-import org.sorcerers.git2neo.driver.loader.util.pathContainsSubPath
-import org.sorcerers.git2neo.model.*
-import org.sorcerers.git2neo.util.getFileRevisionId
-import org.sorcerers.git2neo.util.use
+import org.researchgroup.git2neo.driver.CommitIndex
+import org.researchgroup.git2neo.driver.loader.util.pathContainsSubPath
+import org.researchgroup.git2neo.model.*
+import org.researchgroup.git2neo.util.getFileRevisionId
+import org.researchgroup.git2neo.util.use
 import java.io.ByteArrayOutputStream
 import java.io.File
 
 /**
- * Created by vovak on 5/1/17.
+ * Created by on 5/1/17.
  */
 class GitLoader(val commitIndex: CommitIndex) {
     data class RepositoryInfo(val headSha: String?, val commitsCount: Int, val allCommits: Collection<Commit>)
@@ -134,8 +134,7 @@ class GitLoader(val commitIndex: CommitIndex) {
 
         fun getDiffByAutomerge(): List<DiffEntry> {
             return try {
-                val autoMergedTree = AutoMerger
-                        .automerge(repository, revWalk, this, ThreeWayMergeStrategy.RECURSIVE, false)
+                val autoMergedTree = AutoMerger.automerge(repository, revWalk, this, ThreeWayMergeStrategy.RECURSIVE, false)
                 val treeWalk = TreeWalk(repository)
 
                 treeWalk.addTree(autoMergedTree)
