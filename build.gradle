@@ -1,4 +1,4 @@
-group 'org.researchgroup'
+group 'org.sorcerers'
 version '1.0-SNAPSHOT'
 
 buildscript {
@@ -15,8 +15,6 @@ buildscript {
 
 apply plugin: 'java'
 apply plugin: 'kotlin'
-
-//noinspection GroovyUnusedAssignment
 
 repositories {
     mavenCentral()

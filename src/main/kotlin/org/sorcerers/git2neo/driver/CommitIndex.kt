@@ -1,10 +1,10 @@
-package org.researchgroup.git2neo.driver
+package org.sorcerers.git2neo.driver
 
 import org.apache.commons.lang3.SerializationUtils
 import org.neo4j.graphdb.*
 import org.neo4j.graphdb.traversal.Uniqueness
-import org.researchgroup.git2neo.model.*
-import org.researchgroup.git2neo.util.use
+import org.sorcerers.git2neo.model.*
+import org.sorcerers.git2neo.util.use
 import java.util.*
 import java.util.concurrent.Callable
 import java.util.concurrent.Executors
@@ -13,7 +13,7 @@ import kotlin.system.measureTimeMillis
 
 
 /**
- * @author
+ * @author vovak
  * @since 17/11/16
  */
 
@@ -370,7 +370,7 @@ class CommitIndex(val db: GraphDatabaseService, val logPrefix: String) : CommitS
     }
 
     fun Node.getParentRevisions(): Collection<FileRevisionId> {
-        return this.getRelationships(PARENT, org.neo4j.graphdb.Direction.OUTGOING).map {
+        return this.getRelationships(org.sorcerers.git2neo.driver.PARENT, org.neo4j.graphdb.Direction.OUTGOING).map {
             FileRevisionId(it.endNode.getProperty("id") as String)
         }
     }

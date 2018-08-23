@@ -1,15 +1,15 @@
-package org.researchgroup.git2neo.driver.loader
+package org.sorcerers.git2neo.driver.loader
 
 import org.junit.After
 import org.junit.Assert
 import org.junit.Before
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
-import org.researchgroup.git2neo.driver.CommitIndex
-import org.researchgroup.git2neo.driver.loader.util.cleanUnpackedRepos
-import org.researchgroup.git2neo.driver.loader.util.removeDir
-import org.researchgroup.git2neo.driver.loader.util.unzipRepo
-import org.researchgroup.git2neo.model.Action
-import org.researchgroup.git2neo.model.CommitId
+import org.sorcerers.git2neo.driver.CommitIndex
+import org.sorcerers.git2neo.driver.loader.util.cleanUnpackedRepos
+import org.sorcerers.git2neo.driver.loader.util.removeDir
+import org.sorcerers.git2neo.driver.loader.util.unzipRepo
+import org.sorcerers.git2neo.model.Action
+import org.sorcerers.git2neo.model.CommitId
 import java.io.File
 
 

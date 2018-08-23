@@ -1,9 +1,9 @@
-package org.researchgroup.git2neo.model
+package org.sorcerers.git2neo.model
 
 import java.io.Serializable
 
 /**
- * @author
+* @author vovak
 * @since 17/11/16
 */
 

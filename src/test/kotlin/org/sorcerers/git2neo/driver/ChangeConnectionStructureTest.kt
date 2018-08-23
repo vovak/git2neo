@@ -1,15 +1,15 @@
-package org.researchgroup.git2neo.driver
+package org.sorcerers.git2neo.driver
 
 import org.junit.Assert
 import org.junit.Test
 import org.neo4j.graphdb.Direction
-import org.researchgroup.git2neo.model.Action
-import org.researchgroup.git2neo.model.Commit
-import org.researchgroup.git2neo.model.CommitId
+import org.sorcerers.git2neo.model.Action
+import org.sorcerers.git2neo.model.Commit
+import org.sorcerers.git2neo.model.CommitId
 import java.util.*
 
 /**
- * Created by on 5/2/17.
+ * Created by vovak on 5/2/17.
  */
 class ChangeConnectionStructureTest : CommitIndexTestBase() {
 

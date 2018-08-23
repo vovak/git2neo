@@ -1,4 +1,4 @@
-package org.researchgroup.git2neo.driver
+package org.sorcerers.git2neo.driver
 
 import org.neo4j.graphdb.Direction
 import org.neo4j.graphdb.GraphDatabaseService

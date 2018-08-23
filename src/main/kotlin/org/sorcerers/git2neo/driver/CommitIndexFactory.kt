@@ -1,9 +1,9 @@
-package org.researchgroup.git2neo.driver
+package org.sorcerers.git2neo.driver
 
 import org.neo4j.graphdb.GraphDatabaseService
 
 /**
- * @author
+ * @author vovak
  * @since 22/11/16
  */
 class CommitIndexFactory {
