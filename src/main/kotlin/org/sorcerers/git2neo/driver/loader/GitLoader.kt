@@ -1,7 +1,6 @@
 package org.sorcerers.git2neo.driver.loader
 
 import org.eclipse.jgit.diff.DiffEntry
-import org.eclipse.jgit.diff.DiffFormatter
 import org.eclipse.jgit.diff.RenameDetector
 import org.eclipse.jgit.lib.Constants
 import org.eclipse.jgit.lib.PersonIdent
@@ -17,13 +16,12 @@ import org.sorcerers.git2neo.driver.loader.util.pathContainsSubPath
 import org.sorcerers.git2neo.model.*
 import org.sorcerers.git2neo.util.getFileRevisionId
 import org.sorcerers.git2neo.util.use
-import java.io.ByteArrayOutputStream
 import java.io.File
 
 /**
  * Created by vovak on 5/1/17.
  */
-class GitLoader(val commitIndex: CommitIndex) {
+class GitLoader(private val commitIndex: CommitIndex) {
     data class RepositoryInfo(val headSha: String?, val commitsCount: Int, val allCommits: Collection<Commit>)
 
     fun loadGitRepo(path: String): RepositoryInfo = loadGitRepo(path, false, false)
@@ -76,11 +74,11 @@ class GitLoader(val commitIndex: CommitIndex) {
         return RepositoryInfo(headId?.name, commitsCount, allCommits)
     }
 
-    fun PersonIdent.toContributor(): Contributor {
+    private fun PersonIdent.toContributor(): Contributor {
         return Contributor(this.emailAddress)
     }
 
-    fun RevCommit.getCommitInfo(): CommitInfo {
+    private fun RevCommit.getCommitInfo(): CommitInfo {
         val id = this.id.toObjectId().name
         val authorTime = this.authorIdent.`when`.time
         val committerTime = this.committerIdent.`when`.time
@@ -93,17 +91,15 @@ class GitLoader(val commitIndex: CommitIndex) {
                 parentIds)
     }
 
-    fun DiffEntry.ChangeType.toGit2NeoAction(): Action {
+    private fun DiffEntry.ChangeType.toGit2NeoAction(): Action {
         if (this == DiffEntry.ChangeType.ADD) return Action.CREATED
         if (this == DiffEntry.ChangeType.DELETE) return Action.DELETED
         if (this == DiffEntry.ChangeType.MODIFY) return Action.MODIFIED
         return Action.MOVED
     }
 
-    fun DiffEntry.toFileRevision(commit: CommitInfo): FileRevision {
-        val action = this.changeType.toGit2NeoAction()
+    private fun DiffEntry.toFileRevision(commit: CommitInfo): FileRevision {
         val effectiveOldPath = if (this.oldPath == "/dev/null") null else this.oldPath
-//        println(action.toString() + "  " + effectiveOldPath + "->" + this.newPath)
         return FileRevision(getFileRevisionId(commit.id.idString, this.newPath),
                 this.newPath,
                 effectiveOldPath,
@@ -113,19 +109,15 @@ class GitLoader(val commitIndex: CommitIndex) {
     }
 
 
-    fun RevCommit.getChanges(commit: CommitInfo, repository: Repository, revWalk: RevWalk): List<FileRevision> {
+    private fun RevCommit.getChanges(commit: CommitInfo, repository: Repository, revWalk: RevWalk): List<FileRevision> {
         val parents = this.parents
-//        println(parents.count())
-        val diffFormatter = DiffFormatter(ByteArrayOutputStream())
 
         fun getChangesForSimpleCommit(): List<DiffEntry> {
             val treeWalk = TreeWalk(repository)
-            var from: RevCommit? = null
             if (parents.isEmpty()) {
                 treeWalk.addTree(EmptyTreeIterator())
             } else {
-                from = parents[0]
-                treeWalk.addTree(from.tree)
+                treeWalk.addTree(parents[0].tree)
             }
 
             treeWalk.addTree(this.tree)
@@ -168,7 +160,7 @@ class GitLoader(val commitIndex: CommitIndex) {
         return diffEntries.map { it.toFileRevision(commit) }
     }
 
-    fun cleanDiffEntries(diffEntries: List<DiffEntry>): List<DiffEntry> {
+    private fun cleanDiffEntries(diffEntries: List<DiffEntry>): List<DiffEntry> {
         if (diffEntries.isEmpty()) return emptyList()
         val allPaths = diffEntries.sortedByDescending { it.newPath.length }.map { it.newPath }
         val cleanPaths: MutableSet<String> = HashSet()
