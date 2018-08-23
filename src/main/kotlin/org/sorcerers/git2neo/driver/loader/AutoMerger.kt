@@ -17,6 +17,8 @@ import java.util.HashMap
 
 import java.nio.charset.StandardCharsets.UTF_8
 
+//gracefully stolen from Gerrit source code
+
 object AutoMerger {
     @Throws(IOException::class)
     fun automerge(repo: Repository, rw: RevWalk, commit: RevCommit,
