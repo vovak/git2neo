@@ -56,7 +56,6 @@ class GitLoader(private val commitIndex: CommitIndex) {
                     if (++commitsCount % 100 == 0) {
                         println("Loading commits: $commitsCount done")
                     }
-//                    println("Git2Neo Loader: processing commit ${it.id.abbreviate(8).name()} :: ${it.fullMessage} ")
                     val git2NeoCommit = it.toGit2NeoCommit(repo, revWalk)
 
                     if (collectCommits) {
