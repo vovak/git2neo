@@ -7,7 +7,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.sorcerers.git2neo.driver.CommitIndex
 import org.sorcerers.git2neo.driver.loader.util.cleanUnpackedRepos
 import org.sorcerers.git2neo.driver.loader.util.removeDir
-import org.sorcerers.git2neo.driver.loader.util.unzipRepo
+import org.sorcerers.git2neo.driver.loader.util.unzipTestRepo
 import org.sorcerers.git2neo.model.Action
 import org.sorcerers.git2neo.model.CommitId
 import java.io.File
@@ -34,7 +34,7 @@ class GitLoaderPersistentTest {
     }
 
     private fun loadRepo(name: String) {
-        val repo = unzipRepo(name)
+        val repo = unzipTestRepo(name)
         val loader = GitLoader(myIndex)
         loader.loadGitRepo(repo.absolutePath)
     }

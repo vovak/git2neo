@@ -8,7 +8,7 @@ import org.neo4j.test.TestGraphDatabaseFactory
 import org.sorcerers.git2neo.driver.CommitIndex
 import org.sorcerers.git2neo.driver.loader.util.cleanUnpackedRepos
 import org.sorcerers.git2neo.driver.loader.util.isGitRepo
-import org.sorcerers.git2neo.driver.loader.util.unzipRepo
+import org.sorcerers.git2neo.driver.loader.util.unzipTestRepo
 import org.sorcerers.git2neo.model.Action
 import org.sorcerers.git2neo.model.CommitId
 import java.io.File
@@ -31,14 +31,14 @@ class GitLoaderTest {
     }
 
     private fun loadRepo(name: String) {
-        val repo = unzipRepo(name)
+        val repo = unzipTestRepo(name)
         val loader = GitLoader(myIndex)
         loader.loadGitRepo(repo.absolutePath+"/.git", collectCommits = false, disposeDb = false)
     }
 
     @Test
     fun testUnzip() {
-        val repo = unzipRepo("ima")
+        val repo = unzipTestRepo("ima")
         Assert.assertTrue(isGitRepo(repo.absolutePath))
     }
 

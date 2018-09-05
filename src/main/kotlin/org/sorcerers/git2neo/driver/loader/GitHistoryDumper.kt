@@ -5,9 +5,7 @@ import org.apache.commons.io.filefilter.TrueFileFilter
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.sorcerers.git2neo.driver.CommitIndexFactory
-import org.sorcerers.git2neo.driver.loader.util.extractFolder
-import org.sorcerers.git2neo.driver.loader.util.getRepoArchivePath
-import org.sorcerers.git2neo.driver.loader.util.getRepoUnpackedPath
+import org.sorcerers.git2neo.driver.loader.util.*
 import org.sorcerers.git2neo.model.CommitId
 import org.sorcerers.git2neo.model.FileRevision
 import org.sorcerers.git2neo.model.History
@@ -34,14 +32,19 @@ fun getAllPaths(dir: File): List<String> {
 
 val OBSERVATION_HEADER = listOf("fileId", "sha", "action", "path", "oldPath", "time", "author").joinToString(",")
 
+fun unzipTestRepo(name: String): File {
+    extractFolder(getTestRepoArchivePath(name), getTestRepoUnpackedPath())
+    return File(getTestRepoUnpackedPath() + "/$name")
+}
+
 fun unzipRepo(name: String): File {
     extractFolder(getRepoArchivePath(name), getRepoUnpackedPath())
     return File(getRepoUnpackedPath() + "/$name")
 }
 
-fun loadDb(path: String): GraphDatabaseService {
+fun loadDb(name: String): GraphDatabaseService {
     val graphDb = GraphDatabaseFactory()
-            .newEmbeddedDatabaseBuilder(File(path))
+            .newEmbeddedDatabaseBuilder(File("dbs/$name"))
             .newGraphDatabase()
 
     return graphDb
@@ -55,7 +58,7 @@ fun processUnzippedRepo(name: String, gitDir: File) {
 
     val db = loadDb(name)
     val commitIndex = CommitIndexFactory().loadCommitIndex(db, "db_$name")
-    val repoInfo = GitLoader(commitIndex).loadGitRepo(gitDir.absolutePath, false)
+    val repoInfo = GitLoader(commitIndex).loadGitRepo(gitDir.absolutePath, true, false)
 
     if (repoInfo.headSha == null) {
         println("Cannot process the repo: HEAD not found")

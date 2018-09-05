@@ -7,8 +7,16 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 
 
-fun getRepoArchivePath(name: String): String = "testData/zipped/$name.zip"
-fun getRepoUnpackedPath(): String = "testData/unpacked/"
+fun getTestRepoArchivePath(name: String): String = "testData/zipped/$name.zip"
+fun getRepoArchivePath(name: String): String = "data/zippedRepos/$name.zip"
+
+fun getTestRepoUnpackedPath(): String = "testData/unpacked/"
+fun getRepoUnpackedPath(): String = "data/unpacked/"
+
+fun unzipTestRepo(name: String): File {
+    extractFolder(getTestRepoArchivePath(name), getTestRepoUnpackedPath())
+    return File(getTestRepoUnpackedPath()+"/$name")
+}
 
 fun unzipRepo(name: String): File {
     extractFolder(getRepoArchivePath(name), getRepoUnpackedPath())
@@ -76,7 +84,7 @@ fun isGitRepo(path: String): Boolean {
 }
 
 fun cleanUnpackedRepos() {
-    removeDir(getRepoUnpackedPath())
+    removeDir(getTestRepoUnpackedPath())
 }
 
 fun removeDir(path: String) {
